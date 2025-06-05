@@ -1,6 +1,9 @@
 import React from 'react';
 import { Sun, Moon, Menu, X, Wallet, User, RefreshCw } from 'lucide-react';
-import { PageType, ThemeType, WalletConnection } from '../../types';
+import type { WalletConnection } from '../../types/index';
+import type { PageType, ThemeType } from '../../types/index';
+import type { Token } from '../../types/index';
+
 import LightLogo from './light.svg';
 import DarkLogo from './dark.svg';
 
@@ -16,6 +19,11 @@ interface NavigationProps {
   marketLoading: boolean;
   marketError: string | null;
   refetch: () => void;
+  showWalletModal: boolean;
+  selectedTokenForAnalysis: Token | null;
+  setSelectedTokenForAnalysis: React.Dispatch<React.SetStateAction<Token | null>>;
+  searchQuery: string;
+  setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
@@ -29,14 +37,20 @@ export const Navigation: React.FC<NavigationProps> = ({
   setShowWalletModal,
   marketLoading,
   marketError,
-  refetch
+  refetch,
+  showWalletModal,
+  selectedTokenForAnalysis,
+  setSelectedTokenForAnalysis,
+  searchQuery,
+  setSearchQuery
 }) => {
   const isDark = theme === 'dark';
 
   const navigationItems = [
     { name: 'Home', id: 'home' as PageType },
-    { name: 'Manager', id: 'portfolio' as PageType },
-    { name: 'Learn', id: 'learn' as PageType }
+    { name: 'Watch', id: 'watch' as PageType },
+    { name: 'Learn', id: 'learn' as PageType },
+    { name: 'Manager', id: 'manager' as PageType }
   ];
 
   return (
@@ -58,7 +72,6 @@ export const Navigation: React.FC<NavigationProps> = ({
                       isDark ? 'w-[200px]' : 'w-[250px]'
                     }`}
                   />
-
             </div>
           </div>
           

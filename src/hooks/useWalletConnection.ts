@@ -1,100 +1,76 @@
 import { useState, useEffect } from 'react';
-import { WalletConnection } from '../types';
+import { useZkLogin } from './zklogin';
+import { useConnectWallet } from './connectwallet';
+import type { WalletConnection } from '../types';
 
 export const useWalletConnection = () => {
   const [wallet, setWallet] = useState<WalletConnection | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const connectWithGoogle = async () => {
-    setIsConnecting(true);
-    setError(null);
-    
-    try {
-      // Simulate zk login flow - in real implementation, you'd use the Sui zk login SDK
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock Google user data
-      const mockUser = {
-        address: '0x742d35Cc6C7EC86532F73c8F01e65Ac8c1234567',
-        type: 'zk-google' as const,
-        name: 'Professional User',
-        email: 'user@company.com',
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=google-user`
-      };
-      
-      setWallet(mockUser);
-      
-      // Store in localStorage for persistence
-      localStorage.setItem('wallet-connection', JSON.stringify(mockUser));
-    } catch (err) {
-      setError('Failed to connect with Google. Please try again.');
-    } finally {
-      setIsConnecting(false);
+  // Use both hooks
+  const zkLogin = useZkLogin();
+  const connectWallet = useConnectWallet();
+
+  // Combine connection states
+  const isConnecting = zkLogin.isConnecting || connectWallet.isConnecting;
+  const error = zkLogin.error || connectWallet.error;
+
+  // Update main wallet state when either zkLogin or Sui wallet connects
+  useEffect(() => {
+    if (zkLogin.zkWallet) {
+      setWallet(zkLogin.zkWallet);
+    } else if (connectWallet.suiWallet) {
+      setWallet(connectWallet.suiWallet);
+    } else {
+      setWallet(null);
     }
-  };
+  }, [zkLogin.zkWallet, connectWallet.suiWallet]);
 
-  const connectWithSuiWallet = async () => {
-    setIsConnecting(true);
-    setError(null);
-    
-    try {
-      // Simulate Sui wallet connection - in real implementation, you'd use @mysten/wallet-adapter
-      if (!window.suiWallet) {
-        throw new Error('Sui wallet not detected. Please install a Sui wallet extension.');
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock Sui wallet data
-      const mockWallet = {
-        address: '0x8a94c5e9f123456789abcdef0123456789abcdef',
-        type: 'sui-wallet' as const,
-        name: 'Sui Wallet'
-      };
-      
-      setWallet(mockWallet);
-      
-      // Store in localStorage for persistence
-      localStorage.setItem('wallet-connection', JSON.stringify(mockWallet));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect Sui wallet');
-    } finally {
-      setIsConnecting(false);
+  // Unified disconnect function
+  const disconnect = async () => {
+    if (zkLogin.zkWallet) {
+      zkLogin.disconnectZkLogin();
     }
-  };
-
-  const disconnect = () => {
+    if (connectWallet.suiWallet) {
+      await connectWallet.disconnectSuiWallet();
+    }
     setWallet(null);
-    setError(null);
-    localStorage.removeItem('wallet-connection');
   };
 
+  // Copy address utility
   const copyAddress = async () => {
     if (wallet?.address) {
       await navigator.clipboard.writeText(wallet.address);
     }
   };
 
-  // Load wallet from localStorage on component mount
-  useEffect(() => {
-    const savedWallet = localStorage.getItem('wallet-connection');
-    if (savedWallet) {
-      try {
-        setWallet(JSON.parse(savedWallet));
-      } catch (err) {
-        localStorage.removeItem('wallet-connection');
-      }
-    }
-  }, []);
-
   return {
+    // Unified wallet state
     wallet,
     isConnecting,
     error,
-    connectWithGoogle,
-    connectWithSuiWallet,
+    
+    // Connection methods
+    connectWithGoogle: zkLogin.connectWithGoogle,
+    connectWithSuiWallet: connectWallet.connectWithSuiWallet,
     disconnect,
-    copyAddress
+    copyAddress,
+    handleOAuthCallback: zkLogin.handleOAuthCallback,
+    
+    // Wallet information
+    getAvailableWallets: connectWallet.getAvailableWallets,
+    getInstalledWallets: connectWallet.getInstalledWallets,
+    configuredWallets: connectWallet.configuredWallets,
+    detectedWallets: connectWallet.detectedWallets,
+    allAvailableWallets: connectWallet.allAvailableWallets,
+    
+    // Individual wallet states (for debugging/advanced use)
+    zkWallet: zkLogin.zkWallet,
+    suiWallet: connectWallet.suiWallet,
+    
+    // @suiet/wallet-kit properties
+    connected: connectWallet.connected,
+    account: connectWallet.account,
+    walletName: connectWallet.walletName,
+    adapter: connectWallet.adapter
   };
 };

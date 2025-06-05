@@ -4,6 +4,7 @@ import { Token, Feature, SuiTokenData, MarketStats, TokenFilters } from '../type
 import { formatPrice, formatMarketCap, formatVolume, formatSupply, getRiskBadge } from '../utils/formatters';
 import { Pagination } from '../components/ui/Pagination';
 import { TokenModal } from '../components/modals/TokenModal';
+// Your HomePage should be able to import all these:
 
 interface HomePageProps {
   isDark: boolean;
@@ -71,6 +72,78 @@ export const HomePage: React.FC<HomePageProps> = ({
     }
   ];
 
+  // Sui address validation regex - Updated to support Sui address formats
+  const suiAddressRegex = /^0x([a-fA-F0-9]+)(::[\w]+)*$/;
+  
+  // Check if the search query is a valid Sui address
+  const isValidSuiAddress = (address: string) => {
+    return suiAddressRegex.test(address.trim());
+  };
+
+  // Check if the button should be disabled
+  const isButtonDisabled = () => {
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) return true; // Disable if empty
+    if (trimmedQuery.startsWith('0x') && !isValidSuiAddress(trimmedQuery)) {
+      return true; // Disable if starts with 0x but invalid
+    }
+    return false; // Enable for valid addresses or token symbols
+  };
+
+  // Enhanced token analysis function for search input
+  const handleTokenSearch = () => {
+    // Early return if button should be disabled
+    if (isButtonDisabled()) {
+      return;
+    }
+
+    if (!searchQuery.trim()) {
+      alert('Please enter a token address or symbol');
+      return;
+    }
+
+    console.log('🔍 Searching for token:', searchQuery);
+
+    // Check if it's a token from our displayed tokens
+    const foundToken = displayTokens.find(token => 
+      token.symbol.toLowerCase() === searchQuery.toLowerCase() ||
+      token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      token.address === searchQuery ||
+      token.contractAddress === searchQuery
+    );
+
+    if (foundToken) {
+      console.log('Found token in display list:', foundToken);
+      onAnalyzeToken(foundToken);
+    } else {
+      // Create a temporary token for analysis with the provided address/symbol
+      const tempToken: Token = {
+        id: 999999,
+        name: searchQuery.includes('0x') ? 'Unknown Token' : searchQuery,
+        symbol: searchQuery.includes('0x') ? 'UNKNOWN' : searchQuery.toUpperCase(),
+        price: '$0.00',
+        change: '0.00%',
+        marketCap: '$0',
+        volume: '$0',
+        riskScore: 'medium',
+        trending: 'up',
+        address: searchQuery.includes('0x') ? searchQuery : undefined,
+        contractAddress: searchQuery.includes('0x') ? searchQuery : undefined,
+        category: 'Other'
+      };
+      
+      console.log('Created temporary token for analysis:', tempToken);
+      onAnalyzeToken(tempToken);
+    }
+  };
+
+  // Log display tokens for debugging
+  console.log('HomePage displayTokens:', displayTokens.map(t => ({ 
+    name: t.name, 
+    riskScore: t.riskScore,
+    hasRiskScore: !!t.riskScore 
+  })));
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -128,60 +201,120 @@ export const HomePage: React.FC<HomePageProps> = ({
               for Sui blockchain
             </p>
 
-            {/* Professional search interface */}
-              <div className="relative max-w-3xl mx-auto mb-8 sm:mb-12 md:mb-16 px-4 sm:px-6 md:px-0">
-  <div className={`relative backdrop-blur-xl rounded-xl sm:rounded-2xl border p-1.5 sm:p-2 ${
-    isDark
-      ? 'bg-white/10 border-white/20'
-      : 'bg-white/80 border-gray-200/50'
-  } shadow-xl sm:shadow-2xl`}>
-    
-    {/* Mobile Layout (stacked) */}
-    <div className="flex flex-col sm:hidden space-y-3 p-2">
-      <div className="flex items-center">
-        <Search className={`ml-3 mr-3 w-5 h-5 ${
-          isDark ? 'text-slate-400' : 'text-slate-500'
-        }`} />
-        <input
-          type="text"
-          placeholder="Token address or symbol"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className={`flex-1 py-3 bg-transparent ${
-            isDark ? 'text-white placeholder-slate-400' : 'text-gray-900 placeholder-slate-500'
-          } focus:outline-none text-base font-medium`}
-        />
-      </div>
-      <button className="bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/25 transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 text-sm">
-        <span>Analyze Token</span>
-        <ArrowUpRight className="w-4 h-4 hidden sm:block" />
-      </button>
-    </div>
+            {/* ENHANCED: Professional search interface with Sui address validation */}
+            <div className="relative max-w-3xl mx-auto mb-8 sm:mb-12 md:mb-16 px-4 sm:px-6 md:px-0">
+              <div className={`relative backdrop-blur-xl rounded-xl sm:rounded-2xl border p-1.5 sm:p-2 ${
+                isDark
+                  ? 'bg-white/10 border-white/20'
+                  : 'bg-white/80 border-gray-200/50'
+              } shadow-xl sm:shadow-2xl`}>
+                
+                {/* Mobile Layout (stacked) */}
+                <div className="flex flex-col sm:hidden space-y-3 p-2">
+                  <div className="flex items-center">
+                    <Search className={`ml-3 mr-3 w-5 h-5 ${
+                      isDark ? 'text-slate-400' : 'text-slate-500'
+                    }`} />
+                    <input
+                      type="text"
+                      placeholder="Token address or symbol"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && !isButtonDisabled() && handleTokenSearch()}
+                      className={`flex-1 py-3 bg-transparent ${
+                        isDark ? 'text-white placeholder-slate-400' : 'text-gray-900 placeholder-slate-500'
+                      } focus:outline-none text-base font-medium`}
+                    />
+                  </div>
+                  <button 
+                    onClick={handleTokenSearch}
+                    disabled={isButtonDisabled()}
+                    className={`px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 text-sm transition-all duration-300 ${
+                      isButtonDisabled()
+                        ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white hover:shadow-lg hover:shadow-blue-500/25 transform hover:scale-105'
+                    }`}
+                  >
+                    <span>Analyze Token</span>
+                    <ArrowUpRight className="w-4 h-4 hidden sm:block" />
+                  </button>
+                  
+                  {/* Address Validation Message - Mobile */}
+                  {searchQuery.trim() && (
+                    <div className="px-2">
+                      {isValidSuiAddress(searchQuery) ? (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                          <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                          <span className="text-sm font-medium text-emerald-400">
+                            Valid Sui address
+                          </span>
+                        </div>
+                      ) : searchQuery.startsWith('0x') ? (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                          <div className="w-2 h-2 rounded-full bg-red-400"></div>
+                          <span className="text-sm font-medium text-red-400">
+                            Not a valid Sui contract address
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
 
-    {/* Desktop/Tablet Layout (horizontal) */}
-    <div className="hidden sm:flex items-center">
-      <div className="flex-1 flex items-center">
-        <Search className={`ml-4 md:ml-6 mr-3 md:mr-4 w-5 md:w-6 h-5 md:h-6 ${
-          isDark ? 'text-slate-400' : 'text-slate-500'
-        }`} />
-        <input
-          type="text"
-          placeholder="Enter token address or symbol (e.g., 0x2::sui::SUI)"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className={`flex-1 py-3 md:py-4 bg-transparent ${
-            isDark ? 'text-white placeholder-slate-400' : 'text-gray-900 placeholder-slate-500'
-          } focus:outline-none text-base md:text-lg font-medium`}
-        />
-      </div>
-      <button className="bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white px-4 sm:px-6 md:px-8 py-3 md:py-4 rounded-lg md:rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transform hover:scale-105 transition-all duration-300 flex items-center gap-2 text-sm md:text-base">
-        <span className="hidden sm:inline">Analyze Token</span>
-        <span className="sm:hidden">Analyze</span>
-        <ArrowUpRight className="w-4 md:w-5 h-4 md:h-5" />
-      </button>
-    </div>
-  </div>
-</div>
+                {/* Desktop/Tablet Layout (horizontal) */}
+                <div className="hidden sm:flex items-center">
+                  <div className="flex-1 flex items-center">
+                    <Search className={`ml-4 md:ml-6 mr-3 md:mr-4 w-5 md:w-6 h-5 md:h-6 ${
+                      isDark ? 'text-slate-400' : 'text-slate-500'
+                    }`} />
+                    <input
+                      type="text"
+                      placeholder="Enter token address or symbol (e.g., 0x2::sui::SUI)"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && !isButtonDisabled() && handleTokenSearch()}
+                      className={`flex-1 py-3 md:py-4 bg-transparent ${
+                        isDark ? 'text-white placeholder-slate-400' : 'text-gray-900 placeholder-slate-500'
+                      } focus:outline-none text-base md:text-lg font-medium`}
+                    />
+                  </div>
+                  <button 
+                    onClick={handleTokenSearch}
+                    disabled={isButtonDisabled()}
+                    className={`px-4 sm:px-6 md:px-8 py-3 md:py-4 rounded-lg md:rounded-xl font-semibold flex items-center gap-2 text-sm md:text-base transition-all duration-300 ${
+                      isButtonDisabled()
+                        ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white hover:shadow-lg hover:shadow-blue-500/25 transform hover:scale-105'
+                    }`}
+                  >
+                    <span className="hidden sm:inline">Analyze Token</span>
+                    <span className="sm:hidden">Analyze</span>
+                    <ArrowUpRight className="w-4 md:w-5 h-4 md:h-5" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* Address Validation Message - Desktop */}
+              {searchQuery.trim() && (
+                <div className="mt-3 flex justify-center">
+                  {isValidSuiAddress(searchQuery) ? (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                      <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                      <span className="text-sm font-medium text-emerald-400">
+                        Valid Sui address
+                      </span>
+                    </div>
+                  ) : searchQuery.startsWith('0x') ? (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                      <div className="w-2 h-2 rounded-full bg-red-400"></div>
+                      <span className="text-sm font-medium text-red-400">
+                        Not a valid Sui contract address
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
 
             {/* Quick stats with live data */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
@@ -281,7 +414,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
           </div>
           
-          {/* Market cards display here - same as original but extracted */}
+          {/* Market cards display - Enhanced with better error handling for risk scores */}
           {marketLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[...Array(4)].map((_, i) => (
@@ -376,8 +509,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                     }`}>
                       <span>{token.change}</span>
                     </div>
-                    <div className={`px-2 py-1 rounded-md text-xs border ${getRiskBadge(token.riskScore)}`}>
-                      {token.riskScore.toUpperCase()}
+                    {/* Enhanced risk score display with fallback */}
+                    <div className={`px-2 py-1 rounded-md text-xs border ${
+                      token.riskScore ? getRiskBadge(token.riskScore) : 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                    }`}>
+                      {token.riskScore ? token.riskScore.toUpperCase() : 'UNKNOWN'}
                     </div>
                   </div>
                   
@@ -547,7 +683,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* Professional Data Table */}
-            <section className={`py-12 sm:py-24 px-4 sm:px-6 ${
+      <section className={`py-12 sm:py-24 px-4 sm:px-6 ${
         isDark ? 'bg-slate-900' : 'bg-white'
       }`}>
         <div className="max-w-7xl mx-auto">
@@ -716,9 +852,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                           </div>
                         </div>
                       </div>
+                      {/* Enhanced analyze button with error handling */}
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
+                          console.log('🔗 Mobile Analyze button clicked for:', token.name);
                           onAnalyzeToken(token);
                         }}
                         className="bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white px-3 py-2 rounded-lg text-sm font-medium hover:shadow-lg hover:shadow-blue-500/25 transform hover:scale-105 transition-all duration-200"
@@ -777,8 +915,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                           </span>
                         )}
                       </div>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getRiskBadge(token.riskScore)}`}>
-                        {token.riskScore.toUpperCase()}
+                      {/* Enhanced risk score display */}
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
+                        token.riskScore ? getRiskBadge(token.riskScore) : 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                      }`}>
+                        {token.riskScore ? token.riskScore.toUpperCase() : 'UNKNOWN'}
                       </span>
                     </div>
                   </div>
@@ -793,7 +934,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               )}
             </div>
             
-            {/* Desktop Table View */}
+            {/* Desktop Table View - Enhanced with better analyze button handling */}
             <div className="hidden sm:block overflow-x-auto">
               <table className="w-full">
                 <thead className={`${
@@ -942,15 +1083,24 @@ export const HomePage: React.FC<HomePageProps> = ({
                           )}
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getRiskBadge(token.riskScore)}`}>
-                            {token.riskScore.toUpperCase()}
+                          {/* Enhanced risk score display */}
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
+                            token.riskScore ? getRiskBadge(token.riskScore) : 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                          }`}>
+                            {token.riskScore ? token.riskScore.toUpperCase() : 'UNKNOWN'}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-center">
+                          {/* Enhanced analyze button with better error handling */}
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              onAnalyzeToken(token);
+                              console.log('🔗 Desktop Analyze button clicked for:', token.name);
+                              try {
+                                onAnalyzeToken(token);
+                              } catch (error) {
+                                console.error('Error calling onAnalyzeToken:', error);
+                              }
                             }}
                             className="bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg hover:shadow-blue-500/25 transform hover:scale-105 transition-all duration-200"
                           >
@@ -995,4 +1145,4 @@ export const HomePage: React.FC<HomePageProps> = ({
       )}
     </div>
   );
-};
+}; 
