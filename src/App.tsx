@@ -15,6 +15,7 @@ import { WalletModal } from './components/modals/WalletModal';
 import AnalysisModal from './components/modals/AnalysisModal';
 import { AnalysisResultsPopup } from './components/AnalysisResultsPopup';
 import { PortfolioTracker } from './components/PortfolioTracker';
+import { Dashboard } from './components/Dashboard'; // Import the Dashboard component
 
 // Services
 import { chaincheckApi, TokenAnalysis } from './services/chaincheckApi';
@@ -25,6 +26,17 @@ import { PortfolioPage } from './pages/manager';
 import { LearnPage } from './pages/LearnPage';
 import { WalletAnalyzer } from './pages/watch';
 
+
+// Debug test for getRiskScore function on app startup
+console.log('🧪 Testing getRiskScore function on App startup...');
+try {
+  const testRisk1 = getRiskScore(-15, 1000000000); // Should be 'medium'
+  const testRisk2 = getRiskScore(5, 500000000); // Should be 'medium' 
+  const testRisk3 = getRiskScore(-25, 50000); // Should be 'high'
+  console.log('✅ getRiskScore tests passed:', { testRisk1, testRisk2, testRisk3 });
+} catch (error) {
+  console.error('❌ CRITICAL: getRiskScore function is broken:', error);
+}
 
 // Debug test for getRiskScore function on app startup
 console.log('🧪 Testing getRiskScore function on App startup...');
@@ -97,7 +109,6 @@ const ChainCheckApp: React.FC = () => {
   } = useWalletConnection();
 
   const isDark = theme === 'dark';
-
   // Session expiry and warning handlers
   const handleSessionExpired = () => {
     console.log('🔒 Session has expired across the app');

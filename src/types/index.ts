@@ -7,7 +7,6 @@ declare global {
   }
 }
 
-// Core app types - FIXED: Updated to match navigation
 export type PageType = 'home' | 'manager' | 'watch' | 'learn';
 export type ThemeType = 'light' | 'dark';
 
