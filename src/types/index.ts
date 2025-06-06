@@ -7,8 +7,7 @@ declare global {
   }
 }
 
-// Core app types - FIXED: Updated to match navigation with dashboard
-export type PageType = 'home' | 'watch' | 'learn' | 'manager' | 'dashboard';
+export type PageType = 'home' | 'manager' | 'watch' | 'learn';
 export type ThemeType = 'light' | 'dark';
 
 // Token interface
@@ -35,7 +34,7 @@ export interface WalletConnection {
   type: 'sui-wallet' | 'zk-google';
   name?: string;
   label?: string;
-  email?: string; // For zk-google login
+  email?: string;
   avatar?: string;
 }
 

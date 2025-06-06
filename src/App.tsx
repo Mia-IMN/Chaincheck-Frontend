@@ -6,6 +6,7 @@ import { formatPrice, formatMarketCap, formatVolume, getRiskScore, getTokenCateg
 import { useWalletConnection } from './hooks/useWalletConnection';
 import { useSuiEcosystemData } from './hooks/useSuiEcosystemData';
 import { useSuiSystemData } from './hooks/useSuiSystemData';
+import { SessionProvider } from './hooks/sessionTimer';
 
 // Components
 import { Navigation } from './components/layout/Navigation';
@@ -21,8 +22,21 @@ import { chaincheckApi, TokenAnalysis } from './services/chaincheckApi';
 
 // Pages
 import { HomePage } from './pages/HomePage';
-import { PortfolioPage } from './pages/watch';
+import { PortfolioPage } from './pages/manager';
 import { LearnPage } from './pages/LearnPage';
+import { WalletAnalyzer } from './pages/watch';
+
+
+// Debug test for getRiskScore function on app startup
+console.log('🧪 Testing getRiskScore function on App startup...');
+try {
+  const testRisk1 = getRiskScore(-15, 1000000000); // Should be 'medium'
+  const testRisk2 = getRiskScore(5, 500000000); // Should be 'medium' 
+  const testRisk3 = getRiskScore(-25, 50000); // Should be 'high'
+  console.log('✅ getRiskScore tests passed:', { testRisk1, testRisk2, testRisk3 });
+} catch (error) {
+  console.error('❌ CRITICAL: getRiskScore function is broken:', error);
+}
 
 // Debug test for getRiskScore function on app startup
 console.log('🧪 Testing getRiskScore function on App startup...');
@@ -95,10 +109,17 @@ const ChainCheckApp: React.FC = () => {
   } = useWalletConnection();
 
   const isDark = theme === 'dark';
+  // Session expiry and warning handlers
+  const handleSessionExpired = () => {
+    console.log('🔒 Session has expired across the app');
+    // Optional: You could show a toast notification here
+    // For example: showToast('Session expired. Please unlock again to continue.', 'warning');
+  };
 
-  // Navigation function to dashboard
-  const navigateToDashboard = () => {
-    setCurrentPage('dashboard');
+  const handleSessionWarning = () => {
+    console.log('⚠️ Session warning: 5 minutes remaining');
+    // Optional: You could show a toast notification here
+    // For example: showToast('Session expiring in 5 minutes', 'info');
   };
 
   // Helper function to safely calculate risk score with proper error handling
@@ -452,147 +473,151 @@ const ChainCheckApp: React.FC = () => {
   };
 
   return (
-    <div className={`${isDark ? 'dark bg-slate-900' : 'bg-white'} transition-colors duration-300 min-h-screen`}>
-      {/* Navigation with Navigation-specific search state */}
-      <Navigation
-        theme={theme}
-        setTheme={setTheme}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        mobileMenuOpen={mobileMenuOpen}
-        setMobileMenuOpen={setMobileMenuOpen}
-        wallet={wallet}
-        setShowWalletModal={setShowWalletModal}
-        marketLoading={marketLoading}
-        marketError={marketError}
-        refetch={refetchData}
-        showWalletModal={showWalletModal}
-        selectedTokenForAnalysis={selectedTokenForAnalysis}
-        setSelectedTokenForAnalysis={setSelectedTokenForAnalysis}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-      />
-
-      {/* Page Content */}
-      {currentPage === 'home' && (
-        <HomePage
-          isDark={isDark}
-          searchQuery={homeSearchQuery}
-          setSearchQuery={setHomeSearchQuery}
-          displayTokens={displayTokens}
-          marketStats={marketStats}
+    <SessionProvider
+      sessionDuration={30 * 60 * 1000} // 30 minutes
+      warningTime={5 * 60 * 1000} // 5 minutes warning
+      onSessionExpired={handleSessionExpired}
+      onWarning={handleSessionWarning}
+    >
+      <div className={`${isDark ? 'dark bg-slate-900' : 'bg-white'} transition-colors duration-300 min-h-screen`}>
+        {/* Navigation with Navigation-specific search state */}
+        <Navigation
+          theme={theme}
+          setTheme={setTheme}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          mobileMenuOpen={mobileMenuOpen}
+          setMobileMenuOpen={setMobileMenuOpen}
+          wallet={wallet}
+          setShowWalletModal={setShowWalletModal}
           marketLoading={marketLoading}
           marketError={marketError}
-          lastUpdated={lastUpdated}
-          suiMainToken={suiMainToken}
-          marketFilters={marketFilters}
-          setMarketFilters={setMarketFilters}
-          currentMarketPage={currentMarketPage}
-          setCurrentMarketPage={setCurrentMarketPage}
-          pagination={pagination}
-          refetch={refetch}
-          onAnalyzeToken={handleAnalyzeToken}
+          refetch={refetchData}
+          showWalletModal={showWalletModal}
+          selectedTokenForAnalysis={selectedTokenForAnalysis}
+          setSelectedTokenForAnalysis={setSelectedTokenForAnalysis}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
         />
-      )}
-      
-      {currentPage === 'watch' && (
-        <PortfolioPage 
-          isDark={isDark} 
-        />
-      )}
-      
-      {currentPage === 'learn' && (
-        <LearnPage 
-          isDark={isDark}
-          onNavigateToDashboard={navigateToDashboard}
-          wallet={wallet}
-          onShowWalletModal={() => setShowWalletModal(true)}
-        />
-      )}
 
-      {currentPage === 'dashboard' && (
-        <Dashboard 
-          isDark={isDark}
-        />
-      )}
+        {/* Page Content */}
+        {currentPage === 'home' && (
+          <HomePage
+            isDark={isDark}
+            searchQuery={homeSearchQuery}
+            setSearchQuery={setHomeSearchQuery}
+            displayTokens={displayTokens}
+            marketStats={marketStats}
+            marketLoading={marketLoading}
+            marketError={marketError}
+            lastUpdated={lastUpdated}
+            suiMainToken={suiMainToken}
+            marketFilters={marketFilters}
+            setMarketFilters={setMarketFilters}
+            currentMarketPage={currentMarketPage}
+            setCurrentMarketPage={setCurrentMarketPage}
+            pagination={pagination}
+            refetch={refetch}
+            onAnalyzeToken={handleAnalyzeToken}
+          />
+        )}
+        
+        {currentPage === 'manager' && (
+          <PortfolioPage 
+            isDark={isDark} 
+          />
+        )}
 
-      {currentPage === 'manager' && (
-        <PortfolioTracker 
-          isDark={isDark}
-        />
-      )}
+        {currentPage === 'watch' && (
+          <WalletAnalyzer 
+            isDark={isDark} 
+          />
+        )}
+        
+        {currentPage === 'learn' && (
+          <LearnPage 
+            isDark={isDark}
+          />
+        )}
+{/* 
+        {currentPage === 'manager' && (
+          <PortfolioTracker 
+            isDark={isDark}
+          />
+        )} */}
 
-      {/* Simple fallback content for when pages don't exist yet */}
-      {!['home', 'watch', 'learn', 'manager', 'dashboard'].includes(currentPage) && (
-        <main className="pt-20">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            <div className={`text-center py-20 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              <h1 className="text-4xl font-bold mb-4">Welcome to ChainCheck</h1>
-              <p className="text-xl text-gray-500 mb-8">
-                Your comprehensive blockchain analytics platform
-              </p>
-              {wallet ? (
-                <div className={`p-6 rounded-xl border max-w-md mx-auto ${
-                  isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
-                }`}>
-                  <h3 className="text-lg font-semibold mb-2">Connected Wallet</h3>
-                  <p className="text-sm text-gray-500 mb-2">
-                    {wallet.type === 'zk-google' ? 'Google ZK Login' : 'Sui Wallet'}
-                  </p>
-                  <code className={`text-sm p-2 rounded ${
-                    isDark ? 'bg-slate-700' : 'bg-gray-100'
+        {/* Simple fallback content for when pages don't exist yet */}
+        {!['home', 'watch', 'learn', 'manager'].includes(currentPage) && (
+          <main className="pt-20">
+            <div className="max-w-7xl mx-auto px-6 py-8">
+              <div className={`text-center py-20 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h1 className="text-4xl font-bold mb-4">Welcome to ChainCheck</h1>
+                <p className="text-xl text-gray-500 mb-8">
+                  Your comprehensive blockchain analytics platform
+                </p>
+                {wallet ? (
+                  <div className={`p-6 rounded-xl border max-w-md mx-auto ${
+                    isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
                   }`}>
-                    {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
-                  </code>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowWalletModal(true)}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
-                >
-                  Connect Wallet to Get Started
-                </button>
-              )}
+                    <h3 className="text-lg font-semibold mb-2">Connected Wallet</h3>
+                    <p className="text-sm text-gray-500 mb-2">
+                      {wallet.type === 'zk-google' ? 'Google ZK Login' : 'Sui Wallet'}
+                    </p>
+                    <code className={`text-sm p-2 rounded ${
+                      isDark ? 'bg-slate-700' : 'bg-gray-100'
+                    }`}>
+                      {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
+                    </code>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowWalletModal(true)}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                  >
+                    Connect Wallet to Get Started
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        </main>
-      )}
+          </main>
+        )}
 
-      {/* Footer */}
-      <Footer isDark={isDark} lastUpdated={lastUpdated} />
+        {/* Footer */}
+        <Footer isDark={isDark} lastUpdated={lastUpdated} />
 
-      {/* Wallet Connection Modal */}
-      <WalletModal
-        isOpen={showWalletModal}
-        onClose={() => setShowWalletModal(false)}
-        isDark={isDark}
-        wallet={wallet}
-        isConnecting={isConnecting}
-        error={walletError}
-        connectWithGoogle={connectWithGoogle}
-        connectWithSuiWallet={connectWithSuiWallet}
-        disconnect={disconnect}
-        copyAddress={copyAddress}
-        getAvailableWallets={getAvailableWallets}
-        getInstalledWallets={getInstalledWallets}
-      />
+        {/* Wallet Connection Modal */}
+        <WalletModal
+          isOpen={showWalletModal}
+          onClose={() => setShowWalletModal(false)}
+          isDark={isDark}
+          wallet={wallet}
+          isConnecting={isConnecting}
+          error={walletError}
+          connectWithGoogle={connectWithGoogle}
+          connectWithSuiWallet={connectWithSuiWallet}
+          disconnect={disconnect}
+          copyAddress={copyAddress}
+          getAvailableWallets={getAvailableWallets}
+          getInstalledWallets={getInstalledWallets}
+        />
 
-      {/* Original Analysis Modal (fallback for tokens without contract addresses) */}
-      <AnalysisModal
-        token={selectedTokenForAnalysis}
-        onClose={() => setSelectedTokenForAnalysis(null)}
-        isDark={isDark}
-      />
+        {/* Original Analysis Modal (fallback for tokens without contract addresses) */}
+        <AnalysisModal
+          token={selectedTokenForAnalysis}
+          onClose={() => setSelectedTokenForAnalysis(null)}
+          isDark={isDark}
+        />
 
-      {/* New Analysis Results Popup (for successful API analysis) */}
-      <AnalysisResultsPopup
-        token={analyzedToken}
-        analysis={analysisResult}
-        isOpen={showAnalysisPopup}
-        onClose={handleCloseAnalysisPopup}
-        isDark={isDark}
-      />
-    </div>
+        {/* New Analysis Results Popup (for successful API analysis) */}
+        <AnalysisResultsPopup
+          token={analyzedToken}
+          analysis={analysisResult}
+          isOpen={showAnalysisPopup}
+          onClose={handleCloseAnalysisPopup}
+          isDark={isDark}
+        />
+      </div>
+    </SessionProvider>
   );
 };
 

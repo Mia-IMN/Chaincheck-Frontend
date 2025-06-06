@@ -1,8 +1,9 @@
 import React from 'react';
-import { Sun, Moon, Menu, X, Wallet, User, RefreshCw } from 'lucide-react';
+import { Sun, Moon, Menu, X, Wallet, User, RefreshCw, Clock } from 'lucide-react';
 import type { WalletConnection } from '../../types/index';
 import type { PageType, ThemeType } from '../../types/index';
 import type { Token } from '../../types/index';
+import { useSharedSession } from '../../hooks/sessionTimer';
 
 import LightLogo from './light.svg';
 import DarkLogo from './dark.svg';
@@ -45,13 +46,90 @@ export const Navigation: React.FC<NavigationProps> = ({
   setSearchQuery
 }) => {
   const isDark = theme === 'dark';
+  const { isUnlocked, remainingTime, isWarning, extendSession, lock } = useSharedSession();
 
   const navigationItems = [
     { name: 'Home', id: 'home' as PageType },
+    { name: 'Manager', id: 'manager' as PageType },
     { name: 'Watch', id: 'watch' as PageType },
-    { name: 'Learn', id: 'learn' as PageType },
-    { name: 'Manager', id: 'manager' as PageType }
+    { name: 'Learn', id: 'learn' as PageType }
   ];
+
+  // Format remaining time for display
+  const formatTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Session Timer Component for Navigation
+  const SessionTimer = () => {
+    if (!isUnlocked) return null;
+
+    return (
+      <div className="relative group">
+        <div
+          className={`flex items-center gap-2 px-3 py-2 rounded-xl backdrop-blur-sm border transition-all duration-300 cursor-pointer ${
+            isWarning 
+              ? isDark 
+                ? 'bg-red-500/20 border-red-500/30 text-red-400' 
+                : 'bg-red-50 border-red-200 text-red-600'
+              : isDark 
+                ? 'bg-white/10 border-white/20 text-blue-400' 
+                : 'bg-gray-100 border-gray-200 text-blue-600'
+          }`}
+          onClick={extendSession}
+        >
+          <Clock className="w-4 h-4" />
+          <span className="text-sm font-mono font-medium">
+            {formatTime(remainingTime)}
+          </span>
+        </div>
+        
+        {/* Tooltip */}
+        <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap ${
+          isDark 
+            ? 'bg-gray-800 text-white border border-gray-700' 
+            : 'bg-gray-900 text-white'
+        }`}>
+          Session Timer
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+        </div>
+
+        {/* Extended options on hover */}
+        <div className={`absolute top-full left-1/2 transform -translate-x-1/2 mt-2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none group-hover:pointer-events-auto ${
+          isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+        } border rounded-lg shadow-lg p-2 flex gap-2 whitespace-nowrap`}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              extendSession();
+            }}
+            className={`text-xs px-3 py-1 rounded transition-colors ${
+              isDark 
+                ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' 
+                : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+            }`}
+          >
+            Extend (+30m)
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              lock();
+            }}
+            className={`text-xs px-3 py-1 rounded transition-colors ${
+              isDark 
+                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
+                : 'bg-red-100 text-red-600 hover:bg-red-200'
+            }`}
+          >
+            Lock
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <nav className={`fixed w-full z-50 backdrop-blur-xl border-b ${
@@ -96,6 +174,9 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           {/* Right side controls */}
           <div className="flex items-center gap-4">
+            {/* Session Timer - only show when unlocked */}
+            <SessionTimer />
+
             {/* Refresh button - hidden on mobile */}
             <button
               onClick={refetch}
@@ -196,6 +277,44 @@ export const Navigation: React.FC<NavigationProps> = ({
                 {item.name}
               </button>
             ))}
+
+            {/* Mobile Session Timer */}
+            {isUnlocked && (
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <div className={`flex items-center justify-between px-4 py-3 rounded-lg ${
+                  isDark ? 'bg-white/5' : 'bg-gray-50'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <Clock className={`w-4 h-4 ${isWarning ? 'text-red-500' : isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+                    <span className={`text-sm font-medium ${isWarning ? 'text-red-500' : isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Session: {formatTime(remainingTime)}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={extendSession}
+                      className={`text-xs px-3 py-1 rounded transition-colors ${
+                        isDark 
+                          ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' 
+                          : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                      }`}
+                    >
+                      Extend
+                    </button>
+                    <button
+                      onClick={lock}
+                      className={`text-xs px-3 py-1 rounded transition-colors ${
+                        isDark 
+                          ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
+                          : 'bg-red-100 text-red-600 hover:bg-red-200'
+                      }`}
+                    >
+                      Lock
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="mt-4 pt-4 border-t border-white/10">
               {wallet ? (
