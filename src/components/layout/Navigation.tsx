@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon, Menu, X, Wallet, User, RefreshCw, Clock } from 'lucide-react';
+import { Sun, Moon, Menu, X, Wallet, User, RefreshCw, Clock, LogIn } from 'lucide-react';
 import type { WalletConnection } from '../../types/index';
 import type { PageType, ThemeType } from '../../types/index';
 import type { Token } from '../../types/index';
@@ -25,6 +25,8 @@ interface NavigationProps {
   setSelectedTokenForAnalysis: React.Dispatch<React.SetStateAction<Token | null>>;
   searchQuery: string;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+  // New prop for learn page admin access
+  onLearnAdminLogin?: () => void;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
@@ -43,7 +45,8 @@ export const Navigation: React.FC<NavigationProps> = ({
   selectedTokenForAnalysis,
   setSelectedTokenForAnalysis,
   searchQuery,
-  setSearchQuery
+  setSearchQuery,
+  onLearnAdminLogin
 }) => {
   const isDark = theme === 'dark';
   const { isUnlocked, remainingTime, isWarning, extendSession, lock } = useSharedSession();
@@ -177,19 +180,34 @@ export const Navigation: React.FC<NavigationProps> = ({
             {/* Session Timer - only show when unlocked */}
             <SessionTimer />
 
-            {/* Refresh button - hidden on mobile */}
-            <button
-              onClick={refetch}
-              disabled={marketLoading}
-              className={`hidden md:block p-3 rounded-xl backdrop-blur-sm  transition-all duration-200 hover:scale-110 ${
-                isDark 
-                  ? ' text-blue-400' 
-                  : ' text-blue-600'
-              } ${marketLoading ? 'animate-spin' : ''}`}
-              title="Refresh live data"
-            >
-              <RefreshCw className="w-5 h-5" />
-            </button>
+            {/* Conditional button - Login for Learn page, Refresh for others */}
+            {currentPage === 'learn' ? (
+              <button
+                onClick={onLearnAdminLogin}
+                className={`hidden md:flex items-center gap-2 px-4 py-3 rounded-xl backdrop-blur-sm border transition-all duration-200 hover:scale-105 ${
+                  isDark 
+                    ? 'bg-white/10 border-white/20 text-blue-400 hover:bg-white/20' 
+                    : 'bg-gray-100 border-gray-200 text-blue-600 hover:bg-gray-200'
+                }`}
+                title="Admin Login"
+              >
+                <LogIn className="w-5 h-5" />
+                <span className="text-sm font-medium">Admin</span>
+              </button>
+            ) : (
+              <button
+                onClick={refetch}
+                disabled={marketLoading}
+                className={`hidden md:block p-3 rounded-xl backdrop-blur-sm transition-all duration-200 hover:scale-110 ${
+                  isDark 
+                    ? 'text-blue-400' 
+                    : 'text-blue-600'
+                } ${marketLoading ? 'animate-spin' : ''}`}
+                title="Refresh live data"
+              >
+                <RefreshCw className="w-5 h-5" />
+              </button>
+            )}
 
             {/* Theme toggle */}
             <button
@@ -277,6 +295,26 @@ export const Navigation: React.FC<NavigationProps> = ({
                 {item.name}
               </button>
             ))}
+
+            {/* Mobile Admin Login for Learn page */}
+            {currentPage === 'learn' && onLearnAdminLogin && (
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <button
+                  onClick={() => {
+                    onLearnAdminLogin();
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                    isDark 
+                      ? 'text-blue-400 hover:text-white hover:bg-white/10 border border-white/20' 
+                      : 'text-blue-600 hover:text-gray-900 hover:bg-gray-100 border border-gray-200'
+                  }`}
+                >
+                  <LogIn className="w-5 h-5" />
+                  <span>Admin Login</span>
+                </button>
+              </div>
+            )}
 
             {/* Mobile Session Timer */}
             {isUnlocked && (

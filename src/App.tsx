@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageType, ThemeType, Token, TokenFilters, MarketStats } from './types';
 import { formatPrice, formatMarketCap, formatVolume, getRiskScore, getTokenCategory } from './utils/formatters';
 
@@ -15,7 +15,7 @@ import { WalletModal } from './components/modals/WalletModal';
 import AnalysisModal from './components/modals/AnalysisModal';
 import { AnalysisResultsPopup } from './components/AnalysisResultsPopup';
 import { PortfolioTracker } from './components/PortfolioTracker';
-import { Dashboard } from './components/Dashboard'; // Import the Dashboard component
+import { EnhancedAdmin } from './components/layout/Admin'; // Import the admin component
 
 // Services
 import { chaincheckApi, TokenAnalysis } from './services/chaincheckApi';
@@ -38,22 +38,15 @@ try {
   console.error('❌ CRITICAL: getRiskScore function is broken:', error);
 }
 
-// Debug test for getRiskScore function on app startup
-console.log('🧪 Testing getRiskScore function on App startup...');
-try {
-  const testRisk1 = getRiskScore(-15, 1000000000); // Should be 'medium'
-  const testRisk2 = getRiskScore(5, 500000000); // Should be 'medium' 
-  const testRisk3 = getRiskScore(-25, 50000); // Should be 'high'
-  console.log('✅ getRiskScore tests passed:', { testRisk1, testRisk2, testRisk3 });
-} catch (error) {
-  console.error('❌ CRITICAL: getRiskScore function is broken:', error);
-}
-
 const ChainCheckApp: React.FC = () => {
   // Theme and navigation state
   const [theme, setTheme] = useState<ThemeType>('light');
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<PageType>('home');
+  
+  // Learn page admin state
+  const [learnPageMode, setLearnPageMode] = useState<'public' | 'admin'>('public');
+  const [storedBlogIds, setStoredBlogIds] = useState<string[]>([]);
   
   // FIXED: Separate search states to prevent conflicts
   const [searchQuery, setSearchQuery] = useState<string>(''); // For Navigation
@@ -109,6 +102,43 @@ const ChainCheckApp: React.FC = () => {
   } = useWalletConnection();
 
   const isDark = theme === 'dark';
+
+  // Load stored blog IDs from localStorage
+  useEffect(() => {
+    try {
+      const savedIds = localStorage.getItem('walrus-blog-ids');
+      if (savedIds) {
+        const parsedIds = JSON.parse(savedIds);
+        if (Array.isArray(parsedIds)) {
+          setStoredBlogIds(parsedIds);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading blog IDs from localStorage:', err);
+    }
+  }, []);
+
+  // Handle learn page admin login
+  const handleLearnAdminLogin = () => {
+    console.log('🔑 Learn page admin login triggered');
+    setLearnPageMode('admin');
+  };
+
+  // Handle return to public learn page
+  const handleReturnToPublicLearn = () => {
+    console.log('🔙 Returning to public learn page');
+    setLearnPageMode('public');
+  };
+
+  // Handle blog creation/publishing
+  const handleBlogCreated = (blobId: string) => {
+    if (blobId && !storedBlogIds.includes(blobId)) {
+      const newIds = [...storedBlogIds, blobId];
+      setStoredBlogIds(newIds);
+      localStorage.setItem('walrus-blog-ids', JSON.stringify(newIds));
+    }
+  };
+
   // Session expiry and warning handlers
   const handleSessionExpired = () => {
     console.log('🔒 Session has expired across the app');
@@ -480,7 +510,7 @@ const ChainCheckApp: React.FC = () => {
       onWarning={handleSessionWarning}
     >
       <div className={`${isDark ? 'dark bg-slate-900' : 'bg-white'} transition-colors duration-300 min-h-screen`}>
-        {/* Navigation with Navigation-specific search state */}
+        {/* Navigation with conditional login button for learn page */}
         <Navigation
           theme={theme}
           setTheme={setTheme}
@@ -498,6 +528,7 @@ const ChainCheckApp: React.FC = () => {
           setSelectedTokenForAnalysis={setSelectedTokenForAnalysis}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
+          onLearnAdminLogin={currentPage === 'learn' ? handleLearnAdminLogin : undefined}
         />
 
         {/* Page Content */}
@@ -534,17 +565,24 @@ const ChainCheckApp: React.FC = () => {
           />
         )}
         
-        {currentPage === 'learn' && (
+        {currentPage === 'learn' && learnPageMode === 'public' && (
           <LearnPage 
             isDark={isDark}
+            storedBlogIds={storedBlogIds}
+            onCreateNew={handleLearnAdminLogin}
+            onViewPost={(post) => {
+              console.log('View post:', post.title);
+              // Handle post viewing - you can implement a detailed view here
+            }}
           />
         )}
-{/* 
-        {currentPage === 'manager' && (
-          <PortfolioTracker 
+
+        {currentPage === 'learn' && learnPageMode === 'admin' && (
+          <EnhancedAdmin
             isDark={isDark}
+            onNavigateToDashboard={handleReturnToPublicLearn}
           />
-        )} */}
+        )}
 
         {/* Simple fallback content for when pages don't exist yet */}
         {!['home', 'watch', 'learn', 'manager'].includes(currentPage) && (
