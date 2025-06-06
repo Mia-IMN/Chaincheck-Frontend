@@ -234,8 +234,7 @@ export default function LaunchButton({
         disabled={!connected || isProcessing || requiredPayment === null}
         className={`
           px-6 py-3 rounded-lg font-medium text-white
-          bg-gradient-to-r from-blue-500 to-purple-600
-          hover:from-blue-600 hover:to-purple-700
+          bg-gradient-to-r from-[#2F5A8A] to-[#437AF3]          
           transition-all duration-200 transform hover:scale-105
           disabled:from-gray-400 disabled:to-gray-500 
           disabled:cursor-not-allowed disabled:transform-none
