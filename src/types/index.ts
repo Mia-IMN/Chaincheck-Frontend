@@ -7,11 +7,15 @@ declare global {
   }
 }
 
-// Core interfaces
+// Core app types - FIXED: Updated to match navigation with dashboard
+export type PageType = 'home' | 'watch' | 'learn' | 'manager' | 'dashboard';
+export type ThemeType = 'light' | 'dark';
+
+// Token interface
 export interface Token {
   id: number;
-  name: string;
   symbol: string;
+  name: string;
   price: string;
   change: string;
   marketCap: string;
@@ -19,11 +23,37 @@ export interface Token {
   riskScore: 'low' | 'medium' | 'high';
   trending: 'up' | 'down';
   address?: string;
+  contractAddress?: string;
   liquidity?: string;
   image?: string;
   category?: 'DeFi' | 'Gaming' | 'Infrastructure' | 'NFT' | 'Other';
 }
 
+// Wallet interfaces
+export interface WalletConnection {
+  address: string;
+  type: 'sui-wallet' | 'zk-google';
+  name?: string;
+  label?: string;
+  email?: string; // For zk-google login
+  avatar?: string;
+}
+
+export interface WalletKitConnection {
+  address: string;
+  label?: string;
+  chains?: string[];
+}
+
+export interface ZkLoginWalletData extends WalletConnection {
+  zkProof: any;
+  ephemeralPrivateKey: string;
+  maxEpoch: number;
+  userSalt: string;
+  jwt: string;
+}
+
+// UI component interfaces
 export interface Feature {
   icon: React.ReactNode;
   title: string;
@@ -84,15 +114,6 @@ export interface PaginationInfo {
   itemsPerPage: number;
 }
 
-// Wallet interfaces
-export interface WalletConnection {
-  address: string;
-  type: 'zk-google' | 'sui-wallet';
-  name?: string;
-  email?: string;
-  avatar?: string;
-}
-
 // Analysis interfaces
 export interface AnalysisMetric {
   name: string;
@@ -120,7 +141,3 @@ export interface TokenAnalysis {
   lastUpdated: Date;
   recommendations: string[];
 }
-
-// App state types
-export type PageType = 'home' | 'portfolio' | 'learn';
-export type ThemeType = 'light' | 'dark';

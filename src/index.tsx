@@ -1,16 +1,19 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
+import { WalletProvider } from '@suiet/wallet-kit';
+import '@suiet/wallet-kit/style.css';
 import reportWebVitals from './reportWebVitals';
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
+const root = createRoot(document.getElementById('root') as HTMLElement);
+
 root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+  <StrictMode>
+    <WalletProvider>
+      <App />
+    </WalletProvider>
+  </StrictMode>
 );
 
 // If you want to start measuring performance in your app, pass a function
