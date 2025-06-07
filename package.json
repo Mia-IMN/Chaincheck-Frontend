@@ -18,6 +18,8 @@
     "@types/node": "^16.18.126",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
+    "ajv": "^6.12.6",
+    "ajv-keywords": "^3.5.2",
     "cors": "^2.8.5",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.511.0",
@@ -29,15 +31,12 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts --openssl-legacy-provider start",
-    "build": "react-scripts --openssl-legacy-provider build",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "vercel-build": "npm install --force && next build"
   },
-  "scripts": {
-  "vercel-build": "npm install --force && next build"
-  },
-
   "eslintConfig": {
     "extends": [
       "react-app",
