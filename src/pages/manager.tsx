@@ -128,7 +128,7 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ isDark }) => {
   });
 
   // Your smart contract package ID - update this after deployment
-  const ANALYTICS_PACKAGE_ID = "YOUR_PORTFOLIO_ANALYTICS_PACKAGE_ID";
+  const ANALYTICS_PACKAGE_ID = "0xf1845f05aba533e4656436af6c3622d214e7f6e0befbae14eef6d2b23462d0e6";
 
   // Load wallet data from blockchain
   useEffect(() => {
@@ -489,8 +489,8 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ isDark }) => {
             <div className="flex justify-center">
               <LaunchButton 
                 onUnlock={unlock}
-                contractPackageId="0xc7c4ca2ac48106ca8cf121417e1ea371f89d7a3327a5168d7bffe1aad21d7c45" 
-                configId="0x426e9437a29350c445d83ab5385e832f6efe5d47a07a4a49cdc89fc7063d17f3"
+                contractPackageId="0xf1845f05aba533e4656436af6c3622d214e7f6e0befbae14eef6d2b23462d0e6" 
+                configId="0xa8464ca3ce0ddb185b6f58c497386ef826a033c718cf9c5e8ecdde517490da38"
               />
             </div>
           </div>

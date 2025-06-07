@@ -43,10 +43,10 @@ interface WalletAnalyzerProps {
 
 // Contract configuration
 const CONTRACT_CONFIG = {
-  packageId: "0xc7c4ca2ac48106ca8cf121417e1ea371f89d7a3327a5168d7bffe1aad21d7c45",
-  moduleName: "analyzer",
-  analyzerObjectId: "0x693855c07c8340c582d528069dd781d2de19b6275ad21045b66cba846391db74",
-  oracleObjectId: "0x4f3c8c9e7b6a5d2f1e9c8b7a6d5c4b3a2e1f9c8b7a6d5c4b3a2e1f9c8b7a6d5c4"
+  packageId: "0xf1845f05aba533e4656436af6c3622d214e7f6e0befbae14eef6d2b23462d0e6",
+  moduleName: "wallet_reader",
+  analyzerObjectId: "0x00e570773584a2080b293c4bbd1dfd2776d8d88fed0291a6a5f73e1ab36dc809",
+  oracleObjectId: "0x5e7e1c001a655e5788600e94c56817cecb4d2b84d9a1c15010874e294c962bea"
 };
 
 export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }) => {
@@ -324,8 +324,8 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
             </p>
             <LaunchButton 
               onUnlock={unlock}
-              contractPackageId="0xc7c4ca2ac48106ca8cf121417e1ea371f89d7a3327a5168d7bffe1aad21d7c45" 
-              configId="0x693855c07c8340c582d528069dd781d2de19b6275ad21045b66cba846391db74"
+              contractPackageId="0xf1845f05aba533e4656436af6c3622d214e7f6e0befbae14eef6d2b23462d0e6" 
+              configId="0xa8464ca3ce0ddb185b6f58c497386ef826a033c718cf9c5e8ecdde517490da38"
             />
             
             <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
