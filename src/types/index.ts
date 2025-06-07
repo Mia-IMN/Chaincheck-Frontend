@@ -140,3 +140,17 @@ export interface TokenAnalysis {
   lastUpdated: Date;
   recommendations: string[];
 }
+
+export interface BlogPost {
+  blobId?: string;        
+  id?: string;            
+  title: string;
+  excerpt?: string;
+  category: string;
+  readTime: string;
+  publishedAt: string;
+  author: string;
+  content: string;
+  image?: string;
+  acceptDonation?: boolean;
+}

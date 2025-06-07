@@ -164,7 +164,7 @@ export const TokenModal: React.FC<TokenModalProps> = ({ token, onClose, isDark, 
               }}
               className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg hover:shadow-blue-500/25 transform hover:scale-[1.02] transition-all duration-200"
             >
-              Analysis
+              Analyse
             </button>
           </div>
         </div>

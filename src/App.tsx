@@ -15,7 +15,9 @@ import { WalletModal } from './components/modals/WalletModal';
 import AnalysisModal from './components/modals/AnalysisModal';
 import { AnalysisResultsPopup } from './components/AnalysisResultsPopup';
 import { PortfolioTracker } from './components/PortfolioTracker';
-import { EnhancedAdmin } from './components/layout/Admin'; // Import the admin component
+import { EnhancedAdmin } from './components/layout/Admin';
+import { BlogPostViewer } from './components/layout/blogViewer'; // FIXED: Import BlogPostViewer instead
+import { BlogPost } from './types/index'; // FIXED: Import BlogPost type
 
 // Services
 import { chaincheckApi, TokenAnalysis } from './services/chaincheckApi';
@@ -25,7 +27,6 @@ import { HomePage } from './pages/HomePage';
 import { PortfolioPage } from './pages/manager';
 import { LearnPage } from './pages/LearnPage';
 import { WalletAnalyzer } from './pages/watch';
-
 
 // Debug test for getRiskScore function on app startup
 console.log('🧪 Testing getRiskScore function on App startup...');
@@ -45,8 +46,9 @@ const ChainCheckApp: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   
   // Learn page admin state
-  const [learnPageMode, setLearnPageMode] = useState<'public' | 'admin'>('public');
+  const [learnPageMode, setLearnPageMode] = useState<'public' | 'admin' | 'view-post'>('public'); // FIXED: Added view-post mode
   const [storedBlogIds, setStoredBlogIds] = useState<string[]>([]);
+  const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null); // FIXED: Added selected post state
   
   // FIXED: Separate search states to prevent conflicts
   const [searchQuery, setSearchQuery] = useState<string>(''); // For Navigation
@@ -128,6 +130,26 @@ const ChainCheckApp: React.FC = () => {
   const handleReturnToPublicLearn = () => {
     console.log('🔙 Returning to public learn page');
     setLearnPageMode('public');
+    setSelectedBlogPost(null); // FIXED: Clear selected post
+  };
+
+  // FIXED: Add proper handleViewPost function
+  const handleViewPost = (post: BlogPost) => {
+    console.log('📖 App handleViewPost called with:', post.title);
+    setSelectedBlogPost(post);
+    setLearnPageMode('view-post');
+  };
+
+  // FIXED: Add back to learn function
+  const handleBackToLearn = () => {
+    console.log('⬅️ Going back to learn page from post view');
+    setSelectedBlogPost(null);
+    setLearnPageMode('public');
+  };
+
+  // FIXED: Add donate handler
+  const handleDonate = (blobId: string) => {
+    alert(`Donation functionality for blob ${blobId} would be implemented here`);
   };
 
   // Handle blog creation/publishing
@@ -565,15 +587,26 @@ const ChainCheckApp: React.FC = () => {
           />
         )}
         
+        {/* FIXED: Learn page with proper blog post viewing */}
         {currentPage === 'learn' && learnPageMode === 'public' && (
           <LearnPage 
             isDark={isDark}
             storedBlogIds={storedBlogIds}
             onCreateNew={handleLearnAdminLogin}
-            onViewPost={(post) => {
-              console.log('View post:', post.title);
-              // Handle post viewing - you can implement a detailed view here
+            onViewPost={handleViewPost} // FIXED: Now using proper function
+          />
+        )}
+
+        {/* FIXED: Blog post viewer */}
+        {currentPage === 'learn' && learnPageMode === 'view-post' && selectedBlogPost && (
+          <BlogPostViewer
+            post={{
+              ...selectedBlogPost,
+              excerpt: selectedBlogPost.excerpt ?? ""
             }}
+            isDark={isDark}
+            onBack={handleBackToLearn}
+            onDonate={handleDonate}
           />
         )}
 

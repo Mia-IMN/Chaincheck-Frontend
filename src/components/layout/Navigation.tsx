@@ -189,10 +189,10 @@ export const Navigation: React.FC<NavigationProps> = ({
                     ? 'bg-white/10 border-white/20 text-blue-400 hover:bg-white/20' 
                     : 'bg-gray-100 border-gray-200 text-blue-600 hover:bg-gray-200'
                 }`}
-                title="Admin Login"
+                title="Login"
               >
                 <LogIn className="w-5 h-5" />
-                <span className="text-sm font-medium">Admin</span>
+                {/* <span className="text-sm font-medium">Login</span> */}
               </button>
             ) : (
               <button

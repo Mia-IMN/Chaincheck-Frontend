@@ -235,7 +235,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                         : 'bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white hover:shadow-lg hover:shadow-blue-500/25 transform hover:scale-105'
                     }`}
                   >
-                    <span>Analyze Token</span>
+                    <span>Analyse Token</span>
                     <ArrowUpRight className="w-4 h-4 hidden sm:block" />
                   </button>
                   
@@ -287,8 +287,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                         : 'bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white hover:shadow-lg hover:shadow-blue-500/25 transform hover:scale-105'
                     }`}
                   >
-                    <span className="hidden sm:inline">Analyze Token</span>
-                    <span className="sm:hidden">Analyze</span>
+                    <span className="hidden sm:inline">Analyse Token</span>
+                    <span className="sm:hidden">Analyse</span>
                     <ArrowUpRight className="w-4 md:w-5 h-4 md:h-5" />
                   </button>
                 </div>
@@ -327,7 +327,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div className={`text-sm ${
                   isDark ? 'text-slate-400' : 'text-slate-600'
                 }`}>
-                  Tokens Analyzed
+                  Tokens Analysed
                 </div>
               </div>
               <div className="text-center">
@@ -408,8 +408,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                   ? 'text-blue-400 hover:bg-blue-500/10' 
                   : 'text-blue-600 hover:bg-blue-50'
               } transition-colors duration-200`}>
-                <span>View All</span>
-                <ChevronRight className="w-4 h-4" />
+                {/* <span>View All</span> */}
+                {/* <ChevronRight className="w-4 h-4" /> */}
               </button>
             </div>
           </div>
@@ -861,7 +861,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                         }}
                         className="bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white px-3 py-2 rounded-lg text-sm font-medium hover:shadow-lg hover:shadow-blue-500/25 transform hover:scale-105 transition-all duration-200"
                       >
-                        Analysis
+                        Analyse
                       </button>
                     </div>
                     
@@ -1104,7 +1104,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                             }}
                             className="bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white px-4 py-2 rounded-lg text-sm font-medium hover:shadow-lg hover:shadow-blue-500/25 transform hover:scale-105 transition-all duration-200"
                           >
-                            Analysis
+                            Analyse
                           </button>
                         </td>
                       </tr>

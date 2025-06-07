@@ -179,7 +179,7 @@ export const AnalysisResultsPopup: React.FC<AnalysisResultsPopupProps> = ({
                   <CheckCircle className="w-8 sm:w-10 h-8 sm:h-10 text-emerald-400" />
                 </div>
                 <h3 className={`text-xl sm:text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  ✅ REAL ANALYSIS COMPLETED!
+                  ✅ REAL TIME ANALYSIS COMPLETED!
                 </h3>
                 <p className={`text-sm sm:text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                   🏷️ Token: {token.name} ({token.symbol})

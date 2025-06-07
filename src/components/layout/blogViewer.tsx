@@ -14,7 +14,7 @@ interface BlogPost {
 }
 
 interface BlogPostViewerProps {
-  post: BlogPost;
+  post: BlogPost; 
   isDark: boolean;
   onBack?: () => void;
   onDonate?: (blobId: string) => void;

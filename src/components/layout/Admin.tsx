@@ -532,12 +532,12 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
         </div>
 
         {/* Blog display */}
-        <LearnPage
+        {/* <LearnPage
           isDark={isDark}
           storedBlogIds={storedBlogIds}
           onCreateNew={() => setViewMode('create')}
           onViewPost={handleViewPost}
-        />
+        /> */}
       </div>
     </div>
   );
