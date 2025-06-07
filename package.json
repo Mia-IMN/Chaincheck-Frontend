@@ -34,6 +34,9 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
+  "scripts": {
+    "vercel-build": "npm install --legacy-peer-deps && next build"
+  },
   "eslintConfig": {
     "extends": [
       "react-app",
