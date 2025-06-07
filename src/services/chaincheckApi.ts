@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Use the correct backend URL from environment or fallback to backend port
-const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://chaincheckserver.onrender.com';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

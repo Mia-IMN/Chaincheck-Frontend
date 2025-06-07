@@ -10,11 +10,10 @@ import {
 import { jwtDecode } from 'jwt-decode';
 import type { WalletConnection } from '../types';
 
-// Configuration for Create React App (uses process.env with REACT_APP_ prefix)
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '377644124279-jbv71q5n3vl173c4nm3ajhv2eovok8rc.apps.googleusercontent.com';
-const REDIRECT_URI = process.env.REACT_APP_REDIRECT_URI || window.location.origin;
+const REDIRECT_URI = process.env.REACT_APP_REDIRECT_URI || "https://suichaincheck.vercel.app";
 const PROVER_URL = 'https://prover-dev.mystenlabs.com/v1';
-const SUI_NETWORK = 'mainnet';
+const SUI_NETWORK = 'testnet';
 const FULLNODE_URL = `https://fullnode.${SUI_NETWORK}.sui.io`;
 
 interface JwtPayload {
