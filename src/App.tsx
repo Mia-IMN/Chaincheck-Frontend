@@ -351,21 +351,21 @@ const ChainCheckApp: React.FC = () => {
   // Use live data if available, otherwise fall back to mock data
   const liveTokens = convertApiToTokens();
   const displayTokens = liveTokens.length > 0 ? liveTokens : [
-    {
-      id: 1,
-      name: 'Sui',
-      symbol: 'SUI',
-      price: '$2.34',
-      change: '+5.67%',
-      marketCap: '$6.24B',
-      volume: '$234.5M',
-      liquidity: '$450M',
-      riskScore: 'low' as const,
-      trending: 'up' as const,
-      address: '0x2::sui::SUI',
-      contractAddress: '0x2::sui::SUI',
-      category: 'Infrastructure' as const
-    }
+    // {
+    //   id: 1,
+    //   name: 'Sui',
+    //   symbol: 'SUI',
+    //   price: '$2.34',
+    //   change: '+5.67%',
+    //   marketCap: '$6.24B',
+    //   volume: '$234.5M',
+    //   liquidity: '$450M',
+    //   riskScore: 'low' as const,
+    //   trending: 'up' as const,
+    //   address: '0x2::sui::SUI',
+    //   contractAddress: '0x2::sui::SUI',
+    //   category: 'Infrastructure' as const
+    // }
   ];
 
   console.log('🎯 Final display tokens:', displayTokens.map(t => ({ 

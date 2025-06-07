@@ -4,7 +4,8 @@ import { Token, Feature, SuiTokenData, MarketStats, TokenFilters } from '../type
 import { formatPrice, formatMarketCap, formatVolume, formatSupply, getRiskBadge } from '../utils/formatters';
 import { Pagination } from '../components/ui/Pagination';
 import { TokenModal } from '../components/modals/TokenModal';
-// Your HomePage should be able to import all these:
+
+
 
 interface HomePageProps {
   isDark: boolean;
@@ -44,6 +45,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   onAnalyzeToken
 }) => {
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [showTokenNotFoundModal, setShowTokenNotFoundModal] = useState(false);
 
   const features: Feature[] = [
     {
@@ -72,7 +74,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     }
   ];
 
-  // Sui address validation regex - Updated to support Sui address formats
+  // Sui address validation regex
   const suiAddressRegex = /^0x([a-fA-F0-9]+)(::[\w]+)*$/;
   
   // Check if the search query is a valid Sui address
@@ -102,7 +104,8 @@ export const HomePage: React.FC<HomePageProps> = ({
       return;
     }
 
-    console.log('🔍 Searching for token:', searchQuery);
+    // For debugging
+    // console.log('Searching for token:', searchQuery);
 
     // Check if it's a token from our displayed tokens
     const foundToken = displayTokens.find(token => 
@@ -113,37 +116,85 @@ export const HomePage: React.FC<HomePageProps> = ({
     );
 
     if (foundToken) {
-      console.log('Found token in display list:', foundToken);
+      // For debugging
+      // console.log('Found token in display list:', foundToken);
       onAnalyzeToken(foundToken);
     } else {
-      // Create a temporary token for analysis with the provided address/symbol
-      const tempToken: Token = {
-        id: 999999,
-        name: searchQuery.includes('0x') ? 'Unknown Token' : searchQuery,
-        symbol: searchQuery.includes('0x') ? 'UNKNOWN' : searchQuery.toUpperCase(),
-        price: '$0.00',
-        change: '0.00%',
-        marketCap: '$0',
-        volume: '$0',
-        riskScore: 'medium',
-        trending: 'up',
-        address: searchQuery.includes('0x') ? searchQuery : undefined,
-        contractAddress: searchQuery.includes('0x') ? searchQuery : undefined,
-        category: 'Other'
+      setShowTokenNotFoundModal(true);
       };
-      
-      console.log('Created temporary token for analysis:', tempToken);
-      onAnalyzeToken(tempToken);
-    }
   };
 
   // Log display tokens for debugging
-  console.log('HomePage displayTokens:', displayTokens.map(t => ({ 
-    name: t.name, 
-    riskScore: t.riskScore,
-    hasRiskScore: !!t.riskScore 
-  })));
-
+  // console.log('HomePage displayTokens:', displayTokens.map(t => ({ 
+  //   name: t.name, 
+  //   riskScore: t.riskScore,
+  //   hasRiskScore: !!t.riskScore 
+    const TokenNotFoundModal = () => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={() => setShowTokenNotFoundModal(false)}
+      />
+      
+      {/* Modal */}
+      <div className={`relative w-full max-w-md mx-4 p-6 rounded-2xl border backdrop-blur-xl ${
+        isDark 
+          ? 'bg-slate-900/95 border-white/20' 
+          : 'bg-white/95 border-gray-200'
+      } shadow-2xl transform transition-all duration-300 scale-100`}>
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`p-2 rounded-lg ${
+            isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-600'
+          }`}>
+            <Search className="w-5 h-5" />
+          </div>
+          <h3 className={`text-lg font-semibold ${
+            isDark ? 'text-white' : 'text-gray-900'
+          }`}>
+            Token Not Found
+          </h3>
+        </div>
+        
+        {/* Content */}
+        <div className={`mb-6 ${
+          isDark ? 'text-slate-300' : 'text-slate-600'
+        }`}>
+          <p className="mb-2">
+            The token "{searchQuery}" was not found in our database.
+          </p>
+          <p className="text-sm">
+            It may not exist or might be a new token. Please double-check the token details.
+          </p>
+        </div>
+        
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowTokenNotFoundModal(false)}
+            className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+              isDark 
+                ? 'bg-slate-700 text-white hover:bg-slate-600' 
+                : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+            }`}
+          >
+            Close
+          </button>
+          <button
+            onClick={() => {
+              setShowTokenNotFoundModal(false);
+              setSearchQuery('');
+            }}
+            className="flex-1 px-4 py-2 bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white rounded-lg font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+  
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -1131,9 +1182,10 @@ export const HomePage: React.FC<HomePageProps> = ({
               isDark={isDark}
             />
           </div>
+          
         </div>
       </section>
-
+      {showTokenNotFoundModal && <TokenNotFoundModal />}
       {/* Token Modal */}
       {selectedToken && (
         <TokenModal 
