@@ -119,7 +119,6 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({
   // Extend session function
   const extendSession = useCallback(() => {
     if (isUnlocked) {
-      startTimer(); // Restart the timer
     }
   }, [isUnlocked, startTimer]);
 

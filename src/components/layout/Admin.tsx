@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-
-// Import the components - adjust these paths to match your file structure
 import { BlogCreator } from './blogCreator';
 import { LearnPage } from '../../pages/LearnPage';
 import { BlogPostViewer } from './blogViewer';
@@ -36,6 +34,7 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Load stored blog IDs from localStorage
   useEffect(() => {
@@ -82,7 +81,6 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
         }
       }
       
-      // Sort posts by publish date (newest first)
       posts.sort((a, b) => 
         new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
       );
@@ -174,12 +172,12 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
 
   // Error display component
   const ErrorDisplay = ({ message }: { message: string }) => (
-    <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl">
+    <div className="mb-4 sm:mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl">
       <div className="flex items-center gap-2">
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>{message}</span>
+        <span className="text-sm sm:text-base">{message}</span>
       </div>
       <button 
         onClick={() => setError(null)}
@@ -187,6 +185,85 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
       >
         Dismiss
       </button>
+    </div>
+  );
+
+  // Mobile Post Card Component
+  const MobilePostCard = ({ post, index }: { post: BlogPost; index: number }) => (
+    <div
+      key={post.blobId || index}
+      className={`p-4 rounded-xl border transition-all ${
+        isDark 
+          ? 'bg-white/5 border-white/10 hover:bg-white/10' 
+          : 'bg-white border-gray-200 hover:shadow-md'
+      }`}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryStyle(post.category)}`}>
+              {post.category}
+            </span>
+            {post.acceptDonation && (
+              <span className="text-xs">💝</span>
+            )}
+          </div>
+          
+          <h3 className={`text-base font-bold mb-2 line-clamp-2 ${
+            isDark ? 'text-white' : 'text-gray-900'
+          }`}>
+            {post.title || 'Untitled Post'}
+          </h3>
+          
+          <p className={`text-sm mb-3 line-clamp-2 ${
+            isDark ? 'text-gray-400' : 'text-gray-600'
+          }`}>
+            {post.excerpt || 'No excerpt available'}
+          </p>
+          
+          <div className={`flex flex-wrap items-center gap-2 text-xs ${
+            isDark ? 'text-gray-400' : 'text-gray-500'
+          }`}>
+            <span>By {post.author || 'Unknown'}</span>
+            <span>•</span>
+            <span>{formatDate(post.publishedAt)}</span>
+            <span>•</span>
+            <span>{post.readTime || 'Unknown read time'}</span>
+          </div>
+          
+          <div className={`mt-2 text-xs font-mono ${
+            isDark ? 'text-gray-500' : 'text-gray-400'
+          }`}>
+            ID: {post.blobId?.substring(0, 8) || 'No ID'}...
+          </div>
+        </div>
+        
+        <div className="flex flex-col gap-2 ml-3">
+          <button
+            onClick={() => handleViewPost(post)}
+            className={`p-2 rounded-lg transition-colors ${
+              isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-600'
+            }`}
+            title="View post"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </button>
+          
+          <button
+            onClick={() => handleDeleteBlog(post.blobId!)}
+            className="p-2 rounded-lg transition-colors text-red-500 hover:bg-red-500/10"
+            title="Delete post"
+            disabled={!post.blobId}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+      </div>
     </div>
   );
 
@@ -217,21 +294,21 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
       <div className={`min-h-screen transition-colors duration-200 ${
         isDark ? 'bg-[#0B1120]' : 'bg-gray-50'
       }`}>
-        <div className="max-w-7xl mx-auto px-6 py-24">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+          {/* Mobile-friendly Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+            <div className="flex items-center gap-3 sm:gap-4">
               <button
                 onClick={() => setViewMode('dashboard')}
                 className={`p-2 rounded-lg transition-colors ${
                   isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-600'
                 }`}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <h1 className={`text-3xl font-bold ${
+              <h1 className={`text-2xl sm:text-3xl font-bold ${
                 isDark ? 'text-white' : 'text-gray-900'
               }`}>
                 Manage Blog Posts
@@ -241,7 +318,7 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
             <button
               onClick={fetchAllPosts}
               disabled={loading}
-              className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
+              className={`px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold transition-all duration-200 text-sm sm:text-base ${
                 loading 
                   ? 'bg-gray-400 cursor-not-allowed' 
                   : 'bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] hover:shadow-lg hover:shadow-blue-500/25'
@@ -254,32 +331,32 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
           {/* Error Display */}
           {error && <ErrorDisplay message={error} />}
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className={`p-6 rounded-xl ${
+          {/* Stats - Mobile-friendly grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className={`p-4 sm:p-6 rounded-xl ${
               isDark ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'
             }`}>
-              <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <div className={`text-xl sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 {storedBlogIds.length}
               </div>
               <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 Total Posts
               </div>
             </div>
-            <div className={`p-6 rounded-xl ${
+            <div className={`p-4 sm:p-6 rounded-xl ${
               isDark ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'
             }`}>
-              <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <div className={`text-xl sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 {blogPosts.filter(post => post.acceptDonation).length}
               </div>
               <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 Accept Donations
               </div>
             </div>
-            <div className={`p-6 rounded-xl ${
+            <div className={`p-4 sm:p-6 rounded-xl ${
               isDark ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'
             }`}>
-              <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <div className={`text-xl sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 {new Set(blogPosts.map(post => post.category)).size}
               </div>
               <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -290,25 +367,25 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
 
           {/* Posts list */}
           {loading ? (
-            <div className="text-center py-16">
-              <div className={`inline-block animate-spin rounded-full h-12 w-12 border-b-2 ${
+            <div className="text-center py-12 sm:py-16">
+              <div className={`inline-block animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 ${
                 isDark ? 'border-blue-400' : 'border-blue-600'
               }`}></div>
-              <p className={`mt-4 ${isDark ? 'text-white' : 'text-gray-600'}`}>
+              <p className={`mt-4 text-sm sm:text-base ${isDark ? 'text-white' : 'text-gray-600'}`}>
                 Loading blog posts...
               </p>
             </div>
           ) : blogPosts.length === 0 ? (
-            <div className="text-center py-16">
-              <div className={`text-6xl mb-4 ${isDark ? 'text-white/20' : 'text-gray-300'}`}>
+            <div className="text-center py-12 sm:py-16">
+              <div className={`text-4xl sm:text-6xl mb-4 ${isDark ? 'text-white/20' : 'text-gray-300'}`}>
                 📝
               </div>
-              <h3 className={`text-2xl font-bold mb-2 ${
+              <h3 className={`text-xl sm:text-2xl font-bold mb-2 ${
                 isDark ? 'text-white' : 'text-gray-900'
               }`}>
                 No posts to manage
               </h3>
-              <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              <p className={`text-sm sm:text-base ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 {storedBlogIds.length === 0 
                   ? 'Create some blog posts to see them here.'
                   : 'Unable to load blog posts. Try refreshing.'
@@ -316,96 +393,106 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {blogPosts.map((post, index) => (
-                <div
-                  key={post.blobId || index}
-                  className={`p-6 rounded-xl border transition-all ${
-                    isDark 
-                      ? 'bg-white/5 border-white/10 hover:bg-white/10' 
-                      : 'bg-white border-gray-200 hover:shadow-md'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryStyle(post.category)}`}>
-                          {post.category}
-                        </span>
-                        {post.acceptDonation && (
-                          <span className="text-sm">💝 Donations</span>
-                        )}
+            <>
+              {/* Mobile view - Cards */}
+              <div className="sm:hidden space-y-4">
+                {blogPosts.map((post, index) => (
+                  <MobilePostCard key={post.blobId || index} post={post} index={index} />
+                ))}
+              </div>
+
+              {/* Desktop view - List */}
+              <div className="hidden sm:block space-y-4">
+                {blogPosts.map((post, index) => (
+                  <div
+                    key={post.blobId || index}
+                    className={`p-6 rounded-xl border transition-all ${
+                      isDark 
+                        ? 'bg-white/5 border-white/10 hover:bg-white/10' 
+                        : 'bg-white border-gray-200 hover:shadow-md'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getCategoryStyle(post.category)}`}>
+                            {post.category}
+                          </span>
+                          {post.acceptDonation && (
+                            <span className="text-sm">💝 Donations</span>
+                          )}
+                        </div>
+                        
+                        <h3 className={`text-xl font-bold mb-2 ${
+                          isDark ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          {post.title || 'Untitled Post'}
+                        </h3>
+                        
+                        <p className={`text-sm mb-3 line-clamp-2 ${
+                          isDark ? 'text-gray-400' : 'text-gray-600'
+                        }`}>
+                          {post.excerpt || 'No excerpt available'}
+                        </p>
+                        
+                        <div className={`flex items-center gap-4 text-sm ${
+                          isDark ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
+                          <span>By {post.author || 'Unknown'}</span>
+                          <span>•</span>
+                          <span>{formatDate(post.publishedAt)}</span>
+                          <span>•</span>
+                          <span>{post.readTime || 'Unknown read time'}</span>
+                          <span>•</span>
+                          <span className="font-mono text-xs">{post.blobId?.substring(0, 8) || 'No ID'}...</span>
+                        </div>
                       </div>
                       
-                      <h3 className={`text-xl font-bold mb-2 ${
-                        isDark ? 'text-white' : 'text-gray-900'
-                      }`}>
-                        {post.title || 'Untitled Post'}
-                      </h3>
-                      
-                      <p className={`text-sm mb-3 line-clamp-2 ${
-                        isDark ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
-                        {post.excerpt || 'No excerpt available'}
-                      </p>
-                      
-                      <div className={`flex items-center gap-4 text-sm ${
-                        isDark ? 'text-gray-400' : 'text-gray-500'
-                      }`}>
-                        <span>By {post.author || 'Unknown'}</span>
-                        <span>•</span>
-                        <span>{formatDate(post.publishedAt)}</span>
-                        <span>•</span>
-                        <span>{post.readTime || 'Unknown read time'}</span>
-                        <span>•</span>
-                        <span className="font-mono text-xs">{post.blobId?.substring(0, 8) || 'No ID'}...</span>
+                      <div className="flex items-center gap-2 ml-4">
+                        <button
+                          onClick={() => handleViewPost(post)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-600'
+                          }`}
+                          title="View post"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+                        
+                        <button
+                          onClick={() => handleDeleteBlog(post.blobId!)}
+                          className="p-2 rounded-lg transition-colors text-red-500 hover:bg-red-500/10"
+                          title="Delete post"
+                          disabled={!post.blobId}
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 ml-4">
-                      <button
-                        onClick={() => handleViewPost(post)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-600'
-                        }`}
-                        title="View post"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </button>
-                      
-                      <button
-                        onClick={() => handleDeleteBlog(post.blobId!)}
-                        className="p-2 rounded-lg transition-colors text-red-500 hover:bg-red-500/10"
-                        title="Delete post"
-                        disabled={!post.blobId}
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
     );
   }
 
-  // Default dashboard view
+  // Default dashboard view - Mobile-first
   return (
     <div className={`min-h-screen transition-colors duration-200 ${
       isDark ? 'bg-[#0B1120]' : 'bg-gray-50'
     }`}>
-      <div className="max-w-7xl mx-auto px-6 py-24">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+        {/* Mobile-friendly Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+          <div className="flex items-center gap-3 sm:gap-4">
             {onNavigateToDashboard && (
               <button
                 onClick={onNavigateToDashboard}
@@ -413,22 +500,22 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
                   isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-600'
                 }`}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
             )}
-            <h1 className={`text-3xl font-bold ${
+            <h1 className={`text-2xl sm:text-3xl font-bold ${
               isDark ? 'text-white' : 'text-gray-900'
             }`}>
               Blog Management Dashboard
             </h1>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <button
               onClick={() => setViewMode('manage')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base ${
                 isDark 
                   ? 'border border-white/20 text-white hover:bg-white/5' 
                   : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -438,7 +525,7 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
             </button>
             <button
               onClick={() => setViewMode('create')}
-              className="bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200"
+              className="bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200 text-sm sm:text-base"
             >
               Create New Post
             </button>
@@ -448,96 +535,88 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
         {/* Error Display */}
         {error && <ErrorDisplay message={error} />}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className={`p-6 rounded-xl ${
+        {/* Stats Cards - Mobile-friendly grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className={`p-4 sm:p-6 rounded-xl ${
             isDark ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'
           }`}>
-            <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-lg ${
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`p-2 sm:p-3 rounded-lg ${
                 isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'
               }`}>
                 📝
               </div>
               <div>
-                <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <div className={`text-xl sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {storedBlogIds.length}
                 </div>
-                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className={`text-xs sm:text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   Published Posts
                 </div>
               </div>
             </div>
           </div>
           
-          <div className={`p-6 rounded-xl ${
+          <div className={`p-4 sm:p-6 rounded-xl ${
             isDark ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'
           }`}>
-            <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-lg ${
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`p-2 sm:p-3 rounded-lg ${
                 isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-600'
               }`}>
                 ☁️
               </div>
               <div>
-                <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <div className={`text-xl sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   Walrus
                 </div>
-                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className={`text-xs sm:text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   Storage Network
                 </div>
               </div>
             </div>
           </div>
           
-          <div className={`p-6 rounded-xl ${
+          <div className={`p-4 sm:p-6 rounded-xl ${
             isDark ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'
           }`}>
-            <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-lg ${
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`p-2 sm:p-3 rounded-lg ${
                 isDark ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-100 text-purple-600'
               }`}>
                 👀
               </div>
               <div>
-                <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <div className={`text-xl sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   Live
                 </div>
-                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className={`text-xs sm:text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   Blog Status
                 </div>
               </div>
             </div>
           </div>
           
-          <div className={`p-6 rounded-xl ${
+          <div className={`p-4 sm:p-6 rounded-xl ${
             isDark ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'
           }`}>
-            <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-lg ${
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className={`p-2 sm:p-3 rounded-lg ${
                 isDark ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-600'
               }`}>
                 🔒
               </div>
               <div>
-                <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <div className={`text-xl sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   Secure
                 </div>
-                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className={`text-xs sm:text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   Decentralized
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Blog display */}
-        {/* <LearnPage
-          isDark={isDark}
-          storedBlogIds={storedBlogIds}
-          onCreateNew={() => setViewMode('create')}
-          onViewPost={handleViewPost}
-        /> */}
       </div>
     </div>
   );
