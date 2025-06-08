@@ -702,7 +702,7 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ isDark }) => {
   }
 
   return (
-    <div className="min-h-screen pt-16 sm:pt-20 lg:pt-32 px-4 sm:px-6 pb-20">
+    <div className="min-h-screen pt-16 sm:pt-20 lg:pt-32 px-8 sm:px-10 pb-20">
       <div className="max-w-7xl mx-auto">
         {/* Mobile-first Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">

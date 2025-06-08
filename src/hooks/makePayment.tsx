@@ -247,7 +247,7 @@ export default function LaunchButton({
           ? 'Connect Wallet First'
           : requiredPayment === null
           ? 'Loading...'
-          : `Launch Portfolio Manager (~${formatSuiAmount(requiredPayment)} SUI)`
+          : `Launch Intelligence`
         }
       </button>
 
