@@ -16,8 +16,8 @@ import AnalysisModal from './components/modals/AnalysisModal';
 import { AnalysisResultsPopup } from './components/AnalysisResultsPopup';
 import { PortfolioTracker } from './components/PortfolioTracker';
 import { EnhancedAdmin } from './components/layout/Admin';
-import { BlogPostViewer } from './components/layout/blogViewer'; // FIXED: Import BlogPostViewer instead
-import { BlogPost } from './types/index'; // FIXED: Import BlogPost type
+import { BlogPostViewer } from './components/layout/blogViewer'; 
+import { BlogPost } from './types/index'; 
 
 // Services
 import { chaincheckApi, TokenAnalysis } from './services/chaincheckApi';
@@ -29,14 +29,14 @@ import { LearnPage } from './pages/LearnPage';
 import { WalletAnalyzer } from './pages/watch';
 
 // Debug test for getRiskScore function on app startup
-console.log('🧪 Testing getRiskScore function on App startup...');
+console.log('Testing getRiskScore function on App startup...');
 try {
   const testRisk1 = getRiskScore(-15, 1000000000); // Should be 'medium'
   const testRisk2 = getRiskScore(5, 500000000); // Should be 'medium' 
   const testRisk3 = getRiskScore(-25, 50000); // Should be 'high'
-  console.log('✅ getRiskScore tests passed:', { testRisk1, testRisk2, testRisk3 });
+  console.log('getRiskScore tests passed:', { testRisk1, testRisk2, testRisk3 });
 } catch (error) {
-  console.error('❌ CRITICAL: getRiskScore function is broken:', error);
+  console.error('CRITICAL: getRiskScore function is broken:', error);
 }
 
 const ChainCheckApp: React.FC = () => {
@@ -46,11 +46,11 @@ const ChainCheckApp: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   
   // Learn page admin state
-  const [learnPageMode, setLearnPageMode] = useState<'public' | 'admin' | 'view-post'>('public'); // FIXED: Added view-post mode
+  const [learnPageMode, setLearnPageMode] = useState<'public' | 'admin' | 'view-post'>('public'); 
   const [storedBlogIds, setStoredBlogIds] = useState<string[]>([]);
-  const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null); // FIXED: Added selected post state
+  const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
   
-  // FIXED: Separate search states to prevent conflicts
+  // Separate search states to prevent conflicts
   const [searchQuery, setSearchQuery] = useState<string>(''); // For Navigation
   const [homeSearchQuery, setHomeSearchQuery] = useState<string>(''); // For HomePage
   
@@ -120,34 +120,47 @@ const ChainCheckApp: React.FC = () => {
     }
   }, []);
 
+  // Reset learn page mode when navigating away from learn page or when returning to it
+  useEffect(() => {
+    if (currentPage !== 'learn') {
+      // Reset to public when leaving learn page
+      setLearnPageMode('public');
+      setSelectedBlogPost(null);
+    } else if (currentPage === 'learn' && learnPageMode !== 'public') {
+      // Reset to public when navigating to learn page (ensures it always starts public)
+      setLearnPageMode('public');
+      setSelectedBlogPost(null);
+    }
+  }, [currentPage]);
+
   // Handle learn page admin login
   const handleLearnAdminLogin = () => {
-    console.log('🔑 Learn page admin login triggered');
+    console.log('Learn page admin login triggered');
     setLearnPageMode('admin');
   };
 
   // Handle return to public learn page
   const handleReturnToPublicLearn = () => {
-    console.log('🔙 Returning to public learn page');
+    console.log('Returning to public learn page');
     setLearnPageMode('public');
-    setSelectedBlogPost(null); // FIXED: Clear selected post
+    setSelectedBlogPost(null);
   };
 
-  // FIXED: Add proper handleViewPost function
+  // Add proper handleViewPost function
   const handleViewPost = (post: BlogPost) => {
-    console.log('📖 App handleViewPost called with:', post.title);
+    console.log('App handleViewPost called with:', post.title);
     setSelectedBlogPost(post);
     setLearnPageMode('view-post');
   };
 
-  // FIXED: Add back to learn function
+  // Add back to learn function
   const handleBackToLearn = () => {
-    console.log('⬅️ Going back to learn page from post view');
+    console.log('Going back to learn page from post view');
     setSelectedBlogPost(null);
     setLearnPageMode('public');
   };
 
-  // FIXED: Add donate handler
+  // Add donate handler
   const handleDonate = (blobId: string) => {
     alert(`Donation functionality for blob ${blobId} would be implemented here`);
   };
@@ -163,13 +176,13 @@ const ChainCheckApp: React.FC = () => {
 
   // Session expiry and warning handlers
   const handleSessionExpired = () => {
-    console.log('🔒 Session has expired across the app');
+    console.log('Session has expired across the app');
     // Optional: You could show a toast notification here
     // For example: showToast('Session expired. Please unlock again to continue.', 'warning');
   };
 
   const handleSessionWarning = () => {
-    console.log('⚠️ Session warning: 5 minutes remaining');
+    console.log('Session warning: 5 minutes remaining');
     // Optional: You could show a toast notification here
     // For example: showToast('Session expiring in 5 minutes', 'info');
   };
@@ -197,10 +210,10 @@ const ChainCheckApp: React.FC = () => {
         return 'medium';
       }
 
-      console.log(`✅ Risk score for ${tokenName}: ${riskScore} (change: ${priceChange}%, cap: ${marketCap})`);
+      console.log(`Risk score for ${tokenName}: ${riskScore} (change: ${priceChange}%, cap: ${marketCap})`);
       return riskScore;
     } catch (error) {
-      console.error(`❌ Error calculating risk score for ${tokenName}:`, error);
+      console.error(`Error calculating risk score for ${tokenName}:`, error);
       return 'medium'; // Safe fallback
     }
   };
@@ -214,14 +227,14 @@ const ChainCheckApp: React.FC = () => {
     return `${sign}${priceChange.toFixed(2)}%`;
   };
 
-  // FIXED: Convert API data to display format with comprehensive error handling
+  // Convert API data to display format with comprehensive error handling
   const convertApiToTokens = (): Token[] => {
     if (!suiTokens || suiTokens.length === 0) {
       console.log('No tokens available from API');
       return [];
     }
 
-    console.log(`🔄 Converting ${suiTokens.length} tokens from API...`);
+    console.log(`Converting ${suiTokens.length} tokens from API...`);
 
     const converted: Token[] = suiTokens.map((token, index) => {
       try {
@@ -232,10 +245,10 @@ const ChainCheckApp: React.FC = () => {
         
         console.log(`Processing token ${token.name}: price=${currentPrice}, change=${priceChange}%, cap=${marketCap}, volume=${volume}`);
         
-        // FIXED: Use safe risk score calculation
+        // Use safe risk score calculation
         const riskScore = safeGetRiskScore(priceChange, marketCap, token.name);
 
-        // FIXED: Safe formatting with error handling
+        // Safe formatting with error handling
         let formattedPrice = '$0.00';
         let formattedMarketCap = '$0';
         let formattedVolume = '$0';
@@ -248,7 +261,7 @@ const ChainCheckApp: React.FC = () => {
           console.error(`Error formatting values for ${token.name}:`, formatError);
         }
 
-        // FIXED: Safe category calculation
+        // Safe category calculation
         let category: Token['category'] = 'Other';
         try {
           category = getTokenCategory(token.name || '', token.symbol || '');
@@ -273,7 +286,7 @@ const ChainCheckApp: React.FC = () => {
           category: category
         };
 
-        console.log(`✅ Successfully converted ${token.name}:`, {
+        console.log(`Successfully converted ${token.name}:`, {
           riskScore: convertedToken.riskScore,
           price: convertedToken.price,
           change: convertedToken.change
@@ -281,7 +294,7 @@ const ChainCheckApp: React.FC = () => {
 
         return convertedToken;
       } catch (tokenError) {
-        console.error(`❌ Error processing token ${token.name}:`, tokenError);
+        console.error(`Error processing token ${token.name}:`, tokenError);
         
         // Return a safe fallback token
         return {
@@ -303,72 +316,15 @@ const ChainCheckApp: React.FC = () => {
       }
     });
 
-    // FIXED: Add SUI main token with safe error handling
-    if (suiMainToken && !converted.find(t => t.symbol === 'SUI')) {
-      try {
-        const priceChange = suiMainToken.price_change_percentage_24h ?? 0;
-        const marketCap = suiMainToken.market_cap ?? 0;
-        const currentPrice = suiMainToken.current_price ?? 0;
-        const volume = suiMainToken.total_volume ?? 0;
-        
-        console.log('Processing SUI main token:', { priceChange, marketCap, currentPrice, volume });
-
-        const riskScore = safeGetRiskScore(priceChange, marketCap, 'SUI Main');
-        
-        const suiToken: Token = {
-          id: 0,
-          name: suiMainToken.name || 'Sui',
-          symbol: suiMainToken.symbol || 'SUI',
-          price: formatPrice(currentPrice),
-          change: formatPriceChange(priceChange),
-          marketCap: formatMarketCap(marketCap),
-          volume: formatVolume(volume),
-          riskScore: riskScore,
-          trending: priceChange >= 0 ? 'up' : 'down',
-          image: suiMainToken.image,
-          address: '0x2::sui::SUI',
-          contractAddress: '0x2::sui::SUI',
-          liquidity: formatVolume(volume * 0.4), // Higher liquidity estimate for main token
-          category: 'Infrastructure'
-        };
-        
-        console.log('✅ Successfully processed SUI main token:', {
-          riskScore: suiToken.riskScore,
-          price: suiToken.price,
-          change: suiToken.change
-        });
-        
-        return [suiToken, ...converted];
-      } catch (suiError) {
-        console.error('❌ Error processing SUI main token:', suiError);
-      }
-    }
-
-    console.log(`✅ Total tokens converted: ${converted.length}`);
+    console.log(`Total tokens converted: ${converted.length}`);
     return converted;
   };
 
   // Use live data if available, otherwise fall back to mock data
   const liveTokens = convertApiToTokens();
-  const displayTokens = liveTokens.length > 0 ? liveTokens : [
-    // {
-    //   id: 1,
-    //   name: 'Sui',
-    //   symbol: 'SUI',
-    //   price: '$2.34',
-    //   change: '+5.67%',
-    //   marketCap: '$6.24B',
-    //   volume: '$234.5M',
-    //   liquidity: '$450M',
-    //   riskScore: 'low' as const,
-    //   trending: 'up' as const,
-    //   address: '0x2::sui::SUI',
-    //   contractAddress: '0x2::sui::SUI',
-    //   category: 'Infrastructure' as const
-    // }
-  ];
+  const displayTokens = liveTokens.length > 0 ? liveTokens : [];
 
-  console.log('🎯 Final display tokens:', displayTokens.map(t => ({ 
+  console.log('Final display tokens:', displayTokens.map(t => ({ 
     name: t.name, 
     riskScore: t.riskScore,
     price: t.price,
@@ -376,7 +332,7 @@ const ChainCheckApp: React.FC = () => {
     hasValidRiskScore: ['low', 'medium', 'high'].includes(t.riskScore)
   })));
 
-  // FIXED: Calculate real market stats with safe error handling
+  // Calculate real market stats with safe error handling
   const getMarketStats = (): MarketStats => {
     try {
       const tokens = allTokens.length > 0 ? allTokens : suiTokens;
@@ -408,10 +364,10 @@ const ChainCheckApp: React.FC = () => {
         activeUsers: systemState ? systemState.activeValidators * 150 : 8934
       };
 
-      console.log('📊 Market stats calculated:', stats);
+      console.log('Market stats calculated:', stats);
       return stats;
     } catch (statsError) {
-      console.error('❌ Error calculating market stats:', statsError);
+      console.error('Error calculating market stats:', statsError);
       
       // Return safe fallback stats
       return {
@@ -427,7 +383,7 @@ const ChainCheckApp: React.FC = () => {
 
   // Enhanced handleAnalyzeToken with real API call and better error handling
   const handleAnalyzeToken = async (token: Token) => {
-    console.log('🔍 handleAnalyzeToken called for:', token.name);
+    console.log('handleAnalyzeToken called for:', token.name);
     
     // Check if token has a contract address
     const contractAddress = token.contractAddress || token.address || String(token.id);
@@ -445,20 +401,20 @@ const ChainCheckApp: React.FC = () => {
     setAnalysisResult(null);
 
     try {
-      console.log('🔍 Starting analysis for token:', token.name, 'Address:', contractAddress);
+      console.log('Starting analysis for token:', token.name, 'Address:', contractAddress);
       
       // Call your ChainCheck backend API
       const analysis = await chaincheckApi.analyzeToken(contractAddress);
       
-      console.log('📊 Analysis result:', analysis);
+      console.log('Analysis result:', analysis);
       
-      // FIXED: Safe token update with error handling
+      // Safe token update with error handling
       const updatedToken: Token = {
         ...token,
         contractAddress: contractAddress,
       };
 
-      // FIXED: Safely update token data with analysis results
+      // Safely update token data with analysis results
       try {
         if (analysis.liquidityInfo?.price) {
           updatedToken.price = formatPrice(Number(analysis.liquidityInfo.price));
@@ -482,7 +438,7 @@ const ChainCheckApp: React.FC = () => {
           updatedToken.liquidity = formatVolume(Number(analysis.liquidityInfo.liquidity));
         }
         
-        // FIXED: Safe risk score update based on analysis
+        // Safe risk score update based on analysis
         if (typeof analysis.overallScore === 'number') {
           updatedToken.riskScore = analysis.overallScore >= 80 ? 'low' : 
                                    analysis.overallScore >= 60 ? 'medium' : 'high';
@@ -497,9 +453,9 @@ const ChainCheckApp: React.FC = () => {
       setAnalysisResult(analysis);
       setShowAnalysisPopup(true);
       
-      console.log('✅ Analysis completed successfully');
+      console.log('Analysis completed successfully');
     } catch (error: any) {
-      console.error('❌ Analysis failed:', error);
+      console.error('Analysis failed:', error);
       const errorMessage = error.response?.data?.error || error.message || 'Analysis failed. Please try again.';
       setAnalysisError(errorMessage);
       
@@ -587,17 +543,17 @@ const ChainCheckApp: React.FC = () => {
           />
         )}
         
-        {/* FIXED: Learn page with proper blog post viewing */}
+        {/* Learn page with proper blog post viewing */}
         {currentPage === 'learn' && learnPageMode === 'public' && (
           <LearnPage 
             isDark={isDark}
             storedBlogIds={storedBlogIds}
             onCreateNew={handleLearnAdminLogin}
-            onViewPost={handleViewPost} // FIXED: Now using proper function
+            onViewPost={handleViewPost}
           />
         )}
 
-        {/* FIXED: Blog post viewer */}
+        {/* Blog post viewer */}
         {currentPage === 'learn' && learnPageMode === 'view-post' && selectedBlogPost && (
           <BlogPostViewer
             post={{
@@ -616,7 +572,7 @@ const ChainCheckApp: React.FC = () => {
             onNavigateToDashboard={handleReturnToPublicLearn}
           />
         )}
-
+          
         {/* Simple fallback content for when pages don't exist yet */}
         {!['home', 'watch', 'learn', 'manager'].includes(currentPage) && (
           <main className="pt-20">

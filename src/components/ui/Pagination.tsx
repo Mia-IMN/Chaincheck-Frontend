@@ -65,7 +65,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           disabled={page === '...'}
           className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
             page === currentPage
-              ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+              ? 'bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white shadow-lg shadow-blue-500/25' 
               : page === '...'
               ? isDark ? 'text-slate-500 cursor-default' : 'text-gray-400 cursor-default'
               : isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'

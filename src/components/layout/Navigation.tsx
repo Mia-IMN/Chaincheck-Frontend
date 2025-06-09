@@ -5,8 +5,8 @@ import type { PageType, ThemeType } from '../../types/index';
 import type { Token } from '../../types/index';
 import { useSharedSession } from '../../hooks/sessionTimer';
 
-import LightLogo from './light.svg';
-import DarkLogo from './dark.svg';
+import LightLogo from './light.png';
+import DarkLogo from './dark.png';
 
 interface NavigationProps {
   theme: ThemeType;
@@ -25,7 +25,6 @@ interface NavigationProps {
   setSelectedTokenForAnalysis: React.Dispatch<React.SetStateAction<Token | null>>;
   searchQuery: string;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
-  // New prop for learn page admin access
   onLearnAdminLogin?: () => void;
 }
 
@@ -64,11 +63,9 @@ export const Navigation: React.FC<NavigationProps> = ({
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
-
+  
   // Session Timer Component for Navigation
   const SessionTimer = () => {
-    if (!isUnlocked) return null;
-
     return (
       <div className="relative group">
         <div
@@ -81,22 +78,12 @@ export const Navigation: React.FC<NavigationProps> = ({
                 ? 'bg-white/10 border-white/20 text-blue-400' 
                 : 'bg-gray-100 border-gray-200 text-blue-600'
           }`}
-          onClick={extendSession}
+          // onClick={extendSession}
         >
           <Clock className="w-4 h-4" />
           <span className="text-sm font-mono font-medium">
             {formatTime(remainingTime)}
           </span>
-        </div>
-        
-        {/* Tooltip */}
-        <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-xs font-medium rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap ${
-          isDark 
-            ? 'bg-gray-800 text-white border border-gray-700' 
-            : 'bg-gray-900 text-white'
-        }`}>
-          Session Timer
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
         </div>
 
         {/* Extended options on hover */}
@@ -104,30 +91,13 @@ export const Navigation: React.FC<NavigationProps> = ({
           isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
         } border rounded-lg shadow-lg p-2 flex gap-2 whitespace-nowrap`}>
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              extendSession();
-            }}
             className={`text-xs px-3 py-1 rounded transition-colors ${
               isDark 
                 ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' 
                 : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
             }`}
           >
-            Extend (+30m)
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              lock();
-            }}
-            className={`text-xs px-3 py-1 rounded transition-colors ${
-              isDark 
-                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
-                : 'bg-red-100 text-red-600 hover:bg-red-200'
-            }`}
-          >
-            Lock
+            Session Timer
           </button>
         </div>
       </div>
@@ -149,8 +119,8 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <img
                     src={isDark ? DarkLogo : LightLogo}
                     alt="Logo"
-                    className={`h-full object-contain transition-all duration-300 ${
-                      isDark ? 'w-[200px]' : 'w-[250px]'
+                    className={`h-full object-contain transition-all duration-500 ${
+                      isDark ? 'w-[180px] mt-3' : 'w-[150px] mt-3' 
                     }`}
                   />
             </div>
@@ -177,10 +147,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           {/* Right side controls */}
           <div className="flex items-center gap-4">
-            {/* Session Timer - only show when unlocked */}
-            <SessionTimer />
-
-            {/* Conditional button - Login for Learn page, Refresh for others */}
+            {/* Always show Login on Learn page, otherwise show Session Timer or Refresh */}
             {currentPage === 'learn' ? (
               <button
                 onClick={onLearnAdminLogin}
@@ -192,21 +159,25 @@ export const Navigation: React.FC<NavigationProps> = ({
                 title="Login"
               >
                 <LogIn className="w-5 h-5" />
-                {/* <span className="text-sm font-medium">Login</span> */}
               </button>
             ) : (
-              <button
-                onClick={refetch}
-                disabled={marketLoading}
-                className={`hidden md:block p-3 rounded-xl backdrop-blur-sm transition-all duration-200 hover:scale-110 ${
-                  isDark 
-                    ? 'text-blue-400' 
-                    : 'text-blue-600'
-                } ${marketLoading ? 'animate-spin' : ''}`}
-                title="Refresh live data"
-              >
-                <RefreshCw className="w-5 h-5" />
-              </button>
+              /* Session Timer replaces Refresh when session is active (not on learn page) */
+              isUnlocked ? (
+                <SessionTimer />
+              ) : (
+                <button
+                  onClick={refetch}
+                  disabled={marketLoading}
+                  className={`hidden md:block p-3 rounded-xl backdrop-blur-sm transition-all duration-200 hover:scale-110 ${
+                    isDark 
+                      ? 'text-blue-400' 
+                      : 'text-blue-600'
+                  } ${marketLoading ? 'animate-spin' : ''}`}
+                  title="Refresh live data"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                </button>
+              )
             )}
 
             {/* Theme toggle */}
@@ -296,8 +267,8 @@ export const Navigation: React.FC<NavigationProps> = ({
               </button>
             ))}
 
-            {/* Mobile Admin Login for Learn page */}
-            {currentPage === 'learn' && onLearnAdminLogin && (
+            {/* Always show Admin Login on Learn page, otherwise show Session Timer when active */}
+            {currentPage === 'learn' && onLearnAdminLogin ? (
               <div className="mt-4 pt-4 border-t border-white/10">
                 <button
                   onClick={() => {
@@ -314,44 +285,22 @@ export const Navigation: React.FC<NavigationProps> = ({
                   <span>Admin Login</span>
                 </button>
               </div>
-            )}
-
-            {/* Mobile Session Timer */}
-            {isUnlocked && (
-              <div className="mt-4 pt-4 border-t border-white/10">
-                <div className={`flex items-center justify-between px-4 py-3 rounded-lg ${
-                  isDark ? 'bg-white/5' : 'bg-gray-50'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <Clock className={`w-4 h-4 ${isWarning ? 'text-red-500' : isDark ? 'text-blue-400' : 'text-blue-600'}`} />
-                    <span className={`text-sm font-medium ${isWarning ? 'text-red-500' : isDark ? 'text-white' : 'text-gray-900'}`}>
-                      Session: {formatTime(remainingTime)}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={extendSession}
-                      className={`text-xs px-3 py-1 rounded transition-colors ${
-                        isDark 
-                          ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' 
-                          : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                      }`}
-                    >
-                      Extend
-                    </button>
-                    <button
-                      onClick={lock}
-                      className={`text-xs px-3 py-1 rounded transition-colors ${
-                        isDark 
-                          ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' 
-                          : 'bg-red-100 text-red-600 hover:bg-red-200'
-                      }`}
-                    >
-                      Lock
-                    </button>
+            ) : (
+              /* Mobile Session Timer - only show when not on learn page and session is active */
+              isUnlocked && (
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <div className={`flex items-center justify-between px-4 py-3 rounded-lg ${
+                    isDark ? 'bg-white/5' : 'bg-gray-50'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <Clock className={`w-4 h-4 ${isWarning ? 'text-red-500' : isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+                      <span className={`text-sm font-medium ${isWarning ? 'text-red-500' : isDark ? 'text-white' : 'text-gray-900'}`}>
+                        Session: {formatTime(remainingTime)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )
             )}
 
             <div className="mt-4 pt-4 border-t border-white/10">

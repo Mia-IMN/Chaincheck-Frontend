@@ -1,6 +1,6 @@
 import React from 'react';
-import LightLogo from './light.svg';
-import DarkLogo from './dark.svg';
+import LightLogo from './light.png';
+import DarkLogo from './dark.png';
 
 
 
@@ -29,7 +29,7 @@ export const Footer: React.FC<FooterProps> = ({ isDark, lastUpdated }) => {
                   src={isDark ? DarkLogo : LightLogo}                     
                   alt="Logo"                     
                   className={`h-full object-contain transition-all duration-300 ${                       
-                    isDark ? 'w-[200px]' : 'w-[250px] mb-4'                     
+                    isDark ? 'w-[200px]' : 'w-[200px] mb-4'                     
                   }`}                   
                 />              
               </div>           

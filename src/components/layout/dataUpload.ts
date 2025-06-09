@@ -2,7 +2,7 @@ import axios from "axios";
 
 const publisher = "https://publisher.walrus-testnet.walrus.space";
 
-// Pass blog content as a string (can include HTML, markdown, or embedded base64 images)
+// This passes the blog content as a string (can include HTML, markdown, or embedded base64 images)
 export async function uploadBlogContent(
   content: string,
   epochs: number = 5
@@ -19,28 +19,27 @@ export async function uploadBlogContent(
       },
     });
 
-    // Adjusted blob_id extraction:
     if (!response.data?.newlyCreated?.blobObject?.blobId) {
       console.error(
-        "❌ Malformed response from Walrus:",
+        "Malformed response from Walrus:",
         JSON.stringify(response.data, null, 2)
       );
       return null;
     }
 
     const blobId = response.data.newlyCreated.blobObject.blobId;
-    console.log("✅ Uploaded blog. Blob ID:", blobId);
+    console.log("Uploaded blog. Blob ID:", blobId);
     return blobId;
   } catch (error: any) {
     console.error(
-      "❌ Error uploading blog:",
+      "Error uploading blog:",
       error?.response?.data || error.message
     );
     return null;
   }
 }
 
-// Upload blog metadata and content together
+// Uploading blog metadata and content together
 export async function uploadBlogPost(
   blogData: {
     title: string;
@@ -57,14 +56,14 @@ export async function uploadBlogPost(
     const blogPost = {
       ...blogData,
       publishedAt: new Date().toISOString(),
-      readTime: Math.ceil(blogData.content.length / 1000) + " min read", // Rough estimate
+      readTime: Math.ceil(blogData.content.length / 1000) + " min read", // My estimate, deal with it :)
     };
 
     const content = JSON.stringify(blogPost);
     return await uploadBlogContent(content, epochs);
   } catch (error: any) {
     console.error(
-      "❌ Error uploading blog post:",
+      "Error uploading blog post:",
       error?.response?.data || error.message
     );
     return null;
