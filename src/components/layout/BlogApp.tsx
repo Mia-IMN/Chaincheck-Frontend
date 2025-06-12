@@ -3,6 +3,7 @@ import { LearnPage } from '../../pages/LearnPage';
 import { EnhancedAdmin } from './Admin';
 import { BlogPostViewer } from '../layout/blogViewer';
 import { BlogPost } from '../../types/index';
+import { fetchBlogIds, saveBlogId } from '../../services/blogsIdAPI';
 
 interface BlogAppProps {
   isDark?: boolean;
@@ -13,36 +14,34 @@ export const BlogApp: React.FC<BlogAppProps> = ({ isDark = false }) => {
   const [blogIds, setBlogIds] = useState<string[]>([]);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
 
+  // Fetch IDs from MongoDB backend on mount
   useEffect(() => {
-    const savedIds = localStorage.getItem('walrus-blog-ids');
-    if (savedIds) {
-      try {
-        const parsedIds = JSON.parse(savedIds);
-        if (Array.isArray(parsedIds)) {
-          setBlogIds(parsedIds);
-        }
-      } catch (error) {
-        console.error('Error loading blog IDs:', error);
-      }
-    }
+    fetchBlogIds()
+      .then(setBlogIds)
+      .catch((error) => console.error('Error loading blog IDs:', error));
   }, []);
 
   const handleLogin = () => {
-    console.log('BlogApp: Switching to admin'); // Debug log
+    console.log('BlogApp: Switching to admin'); // for Debugging
     setCurrentView('admin');
   };
 
   const handleLogout = () => {
-    console.log('BlogApp: Switching to public'); // Debug log
+    console.log('BlogApp: Switching to public'); // for Debugging
     setCurrentView('public');
     setSelectedPost(null);
   };
 
-  const handleBlogCreated = (blobId: string) => {
+  // Save new blog ID to MongoDB instead of localStorage
+  const handleBlogCreated = async (blobId: string) => {
     if (!blogIds.includes(blobId)) {
       const newIds = [...blogIds, blobId];
       setBlogIds(newIds);
-      localStorage.setItem('walrus-blog-ids', JSON.stringify(newIds));
+      try {
+        await saveBlogId(blobId);
+      } catch (err) {
+        console.error('Failed to save blog ID to backend', err);
+      }
     }
   };
 
@@ -64,7 +63,7 @@ export const BlogApp: React.FC<BlogAppProps> = ({ isDark = false }) => {
     alert(`Donation functionality for blob ${blobId} would be implemented here`);
   };
 
-  // Add debug logs for current state
+  // Debug logs
   console.log('BlogApp render - currentView:', currentView);
   console.log('BlogApp render - selectedPost:', selectedPost?.title || 'none');
 
