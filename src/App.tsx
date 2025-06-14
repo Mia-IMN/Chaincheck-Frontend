@@ -105,7 +105,7 @@ const ChainCheckApp: React.FC = () => {
     getInstalledWallets
   } = useWalletConnection();
 
-  const isDark = theme === 'dark';
+  const isDark = theme === 'light';
 
   // Load stored blog IDs from MongoDB (preferred) or localStorage (fallback) - FIXED
   useEffect(() => {

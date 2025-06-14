@@ -1,5 +1,6 @@
 // Updated blogsIdApi.ts - Now works with full blog objects
-const BASE_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/blogs`;
+const BASE_URL = 'https://chaincheckserver.onrender.com/api/blogs';
+;
 
 export interface BlogMetadata {
   id: string;          // Walrus blob ID

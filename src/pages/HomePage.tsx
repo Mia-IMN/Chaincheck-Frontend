@@ -239,16 +239,16 @@ export const HomePage: React.FC<HomePageProps> = ({
             <h1 className={`text-5xl md:text-7xl font-bold mb-8 leading-tight ${
               isDark ? 'text-white' : 'text-gray-900'
             }`}>
-              <span className="block mb-2"> Advanced Token</span>
+              <span className="block mb-2"> Sui Blockchain</span>
               <span className="bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] bg-clip-text text-transparent">
-                Analysis
+                Token Analysis
               </span>
             </h1>
             
             <p className={`text-xl md:text-2xl mb-12 leading-relaxed ${
               isDark ? 'text-slate-300' : 'text-slate-600'
             } max-w-3xl mx-auto`}>
-              Professional-grade risk assessment and token analysis platform 
+              Risk assessment and token analysis platform 
               for Sui blockchain
             </p>
 

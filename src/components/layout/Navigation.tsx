@@ -47,7 +47,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   setSearchQuery,
   onLearnAdminLogin
 }) => {
-  const isDark = theme === 'dark';
+  const isDark = theme === 'light';
   const { isUnlocked, remainingTime, isWarning, extendSession, lock } = useSharedSession();
 
   const navigationItems = [
