@@ -162,7 +162,7 @@ export const TokenModal: React.FC<TokenModalProps> = ({ token, onClose, isDark, 
                 onAnalyze(token);
                 onClose();
               }}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg hover:shadow-blue-500/25 transform hover:scale-[1.02] transition-all duration-200"
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white px-3 py-2 rounded-lg text-sm font-medium hover:shadow-lg hover:shadow-blue-500/25 transform hover:scale-105 transition-all duration-200"
             >
               Analyse
             </button>

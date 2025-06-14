@@ -239,17 +239,16 @@ export const HomePage: React.FC<HomePageProps> = ({
             <h1 className={`text-5xl md:text-7xl font-bold mb-8 leading-tight ${
               isDark ? 'text-white' : 'text-gray-900'
             }`}>
-              <span className="block mb-2"> Sui Blockchain</span>
+              <span className="block mb-2">Sui Blockchain</span>
               <span className="bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] bg-clip-text text-transparent">
-                Token Analysis
+                Smart Token Analysis
               </span>
             </h1>
             
             <p className={`text-xl md:text-2xl mb-12 leading-relaxed ${
               isDark ? 'text-slate-300' : 'text-slate-600'
             } max-w-3xl mx-auto`}>
-              Risk assessment and token analysis platform 
-              for Sui blockchain
+              Chaincheck breaks down token risks and red flags, so you don’t need to be a developer to understand what you’re buying.
             </p>
 
             {/* ENHANCED: Professional search interface with Sui address validation */}
@@ -839,7 +838,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   } ${marketLoading ? 'animate-spin' : ''}`}
                 >
                   <RefreshCw className="w-4 h-4" />
-                  <span>Refresh</span>
+                  {/* <span>Refresh</span> */}
                 </button>
               </div>
             </div>

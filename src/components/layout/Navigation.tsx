@@ -120,7 +120,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     src={isDark ? DarkLogo : LightLogo}
                     alt="Logo"
                     className={`h-full object-contain transition-all duration-500 ${
-                      isDark ? 'w-[180px] mt-3' : 'w-[150px] mt-3' 
+                      isDark ? 'w-[180px] mt-3' : 'w-[180px] mt-3' 
                     }`}
                   />
             </div>
