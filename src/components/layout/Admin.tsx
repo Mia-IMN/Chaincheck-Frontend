@@ -3,6 +3,7 @@ import { BlogCreator } from './blogCreator';
 import { LearnPage } from '../../pages/LearnPage';
 import { BlogPostViewer } from './blogViewer';
 import { deleteBlogPost, downloadBlogPost } from './dataDownload';
+import { fetchBlogIds, deleteBlogMetadata } from '../../services/blogsIdAPI';
 
 interface BlogPost {
   title: string;
@@ -20,13 +21,18 @@ interface BlogPost {
 interface EnhancedAdminProps {
   isDark: boolean;
   onNavigateToDashboard?: () => void;
+  onBlogCreated?: (blobId: string, blogData: {
+    title: string;
+    creator: string;
+  }) => Promise<void>; // New callback for MongoDB integration
 }
 
 type ViewMode = 'dashboard' | 'create' | 'view-post' | 'manage';
 
 export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({ 
   isDark, 
-  onNavigateToDashboard 
+  onNavigateToDashboard,
+  onBlogCreated 
 }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
   const [storedBlogIds, setStoredBlogIds] = useState<string[]>([]);
@@ -35,31 +41,58 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isConnectedToMongoDB, setIsConnectedToMongoDB] = useState(false);
 
-  // Load stored blog IDs from localStorage
+  // Load blog IDs from MongoDB (preferred) or localStorage (fallback)
   useEffect(() => {
-    try {
-      const savedIds = localStorage.getItem('walrus-blog-ids');
-      if (savedIds) {
-        const parsedIds = JSON.parse(savedIds);
-        if (Array.isArray(parsedIds)) {
-          setStoredBlogIds(parsedIds);
+    const loadBlogIds = async () => {
+      try {
+        console.log('🔄 Admin: Loading blog IDs from MongoDB...');
+        
+        // Try to fetch from MongoDB first
+        const mongoIds = await fetchBlogIds();
+        setStoredBlogIds(mongoIds);
+        setIsConnectedToMongoDB(true);
+        
+        console.log(`✅ Admin: Loaded ${mongoIds.length} blog IDs from MongoDB`);
+        
+        // Sync with localStorage for backup
+        localStorage.setItem('walrus-blog-ids', JSON.stringify(mongoIds));
+        
+      } catch (mongoError) {
+        console.warn('⚠️ Admin: MongoDB unavailable, falling back to localStorage');
+        setIsConnectedToMongoDB(false);
+        
+        // Fallback to localStorage
+        try {
+          const savedIds = localStorage.getItem('walrus-blog-ids');
+          if (savedIds) {
+            const parsedIds = JSON.parse(savedIds);
+            if (Array.isArray(parsedIds)) {
+              setStoredBlogIds(parsedIds);
+              console.log(`📦 Admin: Loaded ${parsedIds.length} blog IDs from localStorage`);
+            }
+          }
+        } catch (localError) {
+          console.error('❌ Admin: Error loading from localStorage:', localError);
+          setError('Failed to load stored blog posts');
         }
       }
-    } catch (err) {
-      console.error('Error loading blog IDs from localStorage:', err);
-      setError('Failed to load stored blog posts');
-    }
+    };
+
+    loadBlogIds();
   }, []);
 
-  // Save blog IDs to localStorage
+  // Save blog IDs to both MongoDB (preferred) and localStorage (backup)
   const saveBlogIds = (ids: string[]) => {
     try {
+      // Always update localStorage as backup
       localStorage.setItem('walrus-blog-ids', JSON.stringify(ids));
       setStoredBlogIds(ids);
+      console.log('📦 Admin: Saved blog IDs to localStorage as backup');
     } catch (err) {
-      console.error('Error saving blog IDs to localStorage:', err);
-      setError('Failed to save blog post IDs');
+      console.error('❌ Admin: Error saving blog IDs to localStorage:', err);
+      setError('Failed to save blog post IDs to local storage');
     }
   };
 
@@ -70,25 +103,41 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
     const posts: BlogPost[] = [];
     
     try {
+      console.log(`🔍 Admin: Fetching ${storedBlogIds.length} blog posts from Walrus...`);
+      
       for (const blobId of storedBlogIds) {
         try {
           const post = await downloadBlogPost(blobId);
           if (post) {
             posts.push({ ...post, blobId });
+            console.log(`✅ Admin: Loaded post: ${post.title}`);
           }
         } catch (error) {
-          console.error(`Failed to fetch post ${blobId}:`, error);
+          console.error(`❌ Admin: Failed to fetch post ${blobId}:`, error);
+          // Create placeholder entry for failed posts
+          posts.push({
+            title: `Failed to load post (${blobId.substring(0, 8)}...)`,
+            excerpt: 'Content temporarily unavailable from Walrus network',
+            category: 'Unknown',
+            readTime: 'Unknown',
+            publishedAt: new Date().toISOString(),
+            author: 'Unknown',
+            content: 'Failed to load content',
+            blobId
+          });
         }
       }
       
+      // Sort by publish date (newest first)
       posts.sort((a, b) => 
         new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
       );
       
       setBlogPosts(posts);
+      console.log(`✅ Admin: Successfully loaded ${posts.length} blog posts`);
     } catch (err) {
-      console.error('Error fetching posts:', err);
-      setError('Failed to fetch blog posts');
+      console.error('❌ Admin: Error fetching posts:', err);
+      setError('Failed to fetch blog posts from Walrus network');
     } finally {
       setLoading(false);
     }
@@ -103,35 +152,134 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
     }
   }, [storedBlogIds]);
 
-  // Handle new blog published
-  const handleBlogPublished = (blobId: string) => {
-    if (blobId && !storedBlogIds.includes(blobId)) {
-      const newIds = [...storedBlogIds, blobId];
-      saveBlogIds(newIds);
+  // Handle new blog published with MongoDB integration
+  const handleBlogPublished = async (blobId: string, blogMetadata?: {
+    title: string;
+    author: string;
+  }) => {
+    try {
+      console.log('🎉 Admin: Blog published to Walrus:', { blobId, blogMetadata });
+      
+      if (!blobId) {
+        throw new Error('No blob ID provided');
+      }
+
+      if (storedBlogIds.includes(blobId)) {
+        console.log('ℹ️ Admin: Blog ID already exists, skipping save');
+        setViewMode('dashboard');
+        return;
+      }
+
+      // If MongoDB integration is available and metadata is provided
+      if (onBlogCreated && blogMetadata && isConnectedToMongoDB) {
+        console.log('💾 Admin: Saving to MongoDB via BlogApp...');
+        
+        await onBlogCreated(blobId, {
+          title: blogMetadata.title,
+          creator: blogMetadata.author
+        });
+        
+        console.log('✅ Admin: Blog metadata saved to MongoDB');
+      } else {
+        console.log('📦 Admin: Using localStorage fallback');
+        
+        // Fallback to localStorage
+        const newIds = [...storedBlogIds, blobId];
+        saveBlogIds(newIds);
+      }
+      
+      // Update local state for immediate UI feedback
+      if (!storedBlogIds.includes(blobId)) {
+        setStoredBlogIds(prev => [...prev, blobId]);
+      }
+      
       setViewMode('dashboard');
+      
+      // Show success message with connection status
+      const storageMethod = isConnectedToMongoDB ? 'database and' : 'local';
+      alert(`🎉 Blog published successfully!\n\n✅ Uploaded to Walrus network\n✅ Saved to ${storageMethod} storage`);
+      
+    } catch (error) {
+      console.error('❌ Admin: Error saving blog:', error);
+      
+      // Try localStorage fallback on MongoDB error
+      if (isConnectedToMongoDB && error) {
+        console.log('🔄 Admin: MongoDB failed, trying localStorage fallback...');
+        try {
+          const newIds = [...storedBlogIds, blobId];
+          saveBlogIds(newIds);
+          setViewMode('dashboard');
+          alert('⚠️ Blog published to Walrus but saved locally only.\nDatabase connection issue detected.');
+        } catch (fallbackError) {
+          setError('Blog was published to Walrus but failed to save metadata. Please note the blob ID.');
+          alert(`❌ Blog published to Walrus but failed to save.\nBlob ID: ${blobId}\nPlease save this ID manually.`);
+        }
+      } else {
+        setError('Failed to save blog metadata. Please try again.');
+        alert('❌ Blog publication failed. Please try again.');
+      }
     }
   };
 
-  // Handle blog deletion
+  // Handle blog deletion with MongoDB integration
   const handleDeleteBlog = async (blobId: string) => {
     if (!blobId) return;
     
-    const confirmed = window.confirm('Are you sure you want to delete this blog post? This action cannot be undone.');
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this blog post?\n\n' +
+      '⚠️ This will:\n' +
+      '• Remove from database\n' +
+      '• Remove from local storage\n' +
+      '• Walrus content will remain (cannot be deleted)\n\n' +
+      'This action cannot be undone.'
+    );
+    
     if (!confirmed) return;
 
     try {
-      const success = await deleteBlogPost(blobId);
-      if (success) {
-        const newIds = storedBlogIds.filter(id => id !== blobId);
-        saveBlogIds(newIds);
-        setBlogPosts(blogPosts.filter(post => post.blobId !== blobId));
-        alert('Blog post deleted successfully');
-      } else {
-        alert('Failed to delete blog post from Walrus');
+      console.log(`🗑️ Admin: Deleting blog ${blobId}...`);
+      
+      let mongoDeleted = false;
+      let walrusDeleted = false;
+      
+      // Try to delete from MongoDB first
+      if (isConnectedToMongoDB) {
+        try {
+          mongoDeleted = await deleteBlogMetadata(blobId);
+          console.log(`${mongoDeleted ? '✅' : '❌'} Admin: MongoDB deletion result: ${mongoDeleted}`);
+        } catch (error) {
+          console.error('❌ Admin: MongoDB deletion failed:', error);
+        }
       }
+      
+      // Try to delete from Walrus (note: this may not work as Walrus deletion isn't always supported)
+      try {
+        walrusDeleted = await deleteBlogPost(blobId);
+        console.log(`${walrusDeleted ? '✅' : '❌'} Admin: Walrus deletion result: ${walrusDeleted}`);
+      } catch (error) {
+        console.error('⚠️ Admin: Walrus deletion failed (expected):', error);
+      }
+      
+      // Remove from local state and localStorage
+      const newIds = storedBlogIds.filter(id => id !== blobId);
+      saveBlogIds(newIds);
+      setBlogPosts(blogPosts.filter(post => post.blobId !== blobId));
+      
+      // Show appropriate success message
+      if (mongoDeleted || !isConnectedToMongoDB) {
+        alert(
+          '✅ Blog post deleted successfully!\n\n' +
+          `${mongoDeleted ? '✅ Removed from database\n' : ''}` +
+          '✅ Removed from local storage\n' +
+          `${walrusDeleted ? '✅ Removed from Walrus\n' : '⚠️ Walrus content remains (cannot be deleted)\n'}`
+        );
+      } else {
+        alert('⚠️ Blog removed locally but may still exist in database.\nPlease refresh and try again.');
+      }
+      
     } catch (error) {
-      console.error('Error deleting blog:', error);
-      alert('An error occurred while deleting the blog post');
+      console.error('❌ Admin: Error deleting blog:', error);
+      alert('❌ An error occurred while deleting the blog post.\nPlease try again.');
     }
   };
 
@@ -143,7 +291,7 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
 
   // Handle donation (placeholder)
   const handleDonate = (blobId: string) => {
-    alert(`Donation functionality for blob ${blobId} would be implemented here`);
+    alert(`💝 Donation functionality for blob ${blobId} would be implemented here`);
   };
 
   // Utility functions
@@ -188,6 +336,20 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
     </div>
   );
 
+  // Connection Status Component
+  const ConnectionStatus = () => (
+    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs ${
+      isConnectedToMongoDB
+        ? isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-800'
+        : isDark ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-800'
+    }`}>
+      <div className={`w-2 h-2 rounded-full ${
+        isConnectedToMongoDB ? 'bg-green-500' : 'bg-yellow-500'
+      }`}></div>
+      {isConnectedToMongoDB ? 'Connected to Database' : 'Using Local Storage'}
+    </div>
+  );
+
   // Mobile Post Card Component
   const MobilePostCard = ({ post, index }: { post: BlogPost; index: number }) => (
     <div
@@ -196,7 +358,7 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
         isDark 
           ? 'bg-white/5 border-white/10 hover:bg-white/10' 
           : 'bg-white border-gray-200 hover:shadow-md'
-      }`}
+      } ${post.content === 'Failed to load content' ? 'border-yellow-500/50' : ''}`}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
@@ -206,6 +368,13 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
             </span>
             {post.acceptDonation && (
               <span className="text-xs">💝</span>
+            )}
+            {post.content === 'Failed to load content' && (
+              <span className={`px-2 py-1 rounded-full text-xs ${
+                isDark ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                Failed to load
+              </span>
             )}
           </div>
           
@@ -272,7 +441,7 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
     return (
       <BlogCreator
         isDark={isDark}
-        onPublish={handleBlogPublished}
+        onPublish={handleBlogPublished} // Updated to handle metadata
         onCancel={() => setViewMode('dashboard')}
       />
     );
@@ -308,11 +477,14 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <h1 className={`text-2xl sm:text-3xl font-bold ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}>
-                Manage Blog Posts
-              </h1>
+              <div>
+                <h1 className={`text-2xl sm:text-3xl font-bold ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Manage Blog Posts
+                </h1>
+                <ConnectionStatus />
+              </div>
             </div>
             
             <button
@@ -372,7 +544,7 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
                 isDark ? 'border-blue-400' : 'border-blue-600'
               }`}></div>
               <p className={`mt-4 text-sm sm:text-base ${isDark ? 'text-white' : 'text-gray-600'}`}>
-                Loading blog posts...
+                Loading blog posts from Walrus network...
               </p>
             </div>
           ) : blogPosts.length === 0 ? (
@@ -410,7 +582,7 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
                       isDark 
                         ? 'bg-white/5 border-white/10 hover:bg-white/10' 
                         : 'bg-white border-gray-200 hover:shadow-md'
-                    }`}
+                    } ${post.content === 'Failed to load content' ? 'border-yellow-500/50' : ''}`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -420,6 +592,13 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
                           </span>
                           {post.acceptDonation && (
                             <span className="text-sm">💝 Donations</span>
+                          )}
+                          {post.content === 'Failed to load content' && (
+                            <span className={`px-3 py-1 rounded-full text-sm ${
+                              isDark ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              ⚠️ Failed to load
+                            </span>
                           )}
                         </div>
                         
@@ -505,11 +684,14 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
                 </svg>
               </button>
             )}
-            <h1 className={`text-2xl sm:text-3xl font-bold ${
-              isDark ? 'text-white' : 'text-gray-900'
-            }`}>
-              Blog Management Dashboard
-            </h1>
+            <div>
+              <h1 className={`text-2xl sm:text-3xl font-bold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>
+                Blog Management Dashboard
+              </h1>
+              <ConnectionStatus />
+            </div>
           </div>
           
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
@@ -582,16 +764,18 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
           }`}>
             <div className="flex items-center gap-2 sm:gap-3">
               <div className={`p-2 sm:p-3 rounded-lg ${
-                isDark ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-100 text-purple-600'
+                isConnectedToMongoDB
+                  ? isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-600'
+                  : isDark ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-600'
               }`}>
-                👀
+                {isConnectedToMongoDB ? '🔗' : '📦'}
               </div>
               <div>
                 <div className={`text-xl sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Live
+                  {isConnectedToMongoDB ? 'Online' : 'Local'}
                 </div>
                 <div className={`text-xs sm:text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Blog Status
+                  Storage Mode
                 </div>
               </div>
             </div>
@@ -602,7 +786,7 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
           }`}>
             <div className="flex items-center gap-2 sm:gap-3">
               <div className={`p-2 sm:p-3 rounded-lg ${
-                isDark ? 'bg-yellow-500/20 text-yellow-400' : 'bg-yellow-100 text-yellow-600'
+                isDark ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-100 text-purple-600'
               }`}>
                 🔒
               </div>

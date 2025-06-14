@@ -21,6 +21,7 @@ import { BlogPost } from './types/index';
 
 // Services
 import { chaincheckApi, TokenAnalysis } from './services/chaincheckApi';
+import { saveBlogMetadata, fetchBlogIds } from './services/blogsIdAPI';
 
 // Pages
 import { HomePage } from './pages/HomePage';
@@ -45,10 +46,11 @@ const ChainCheckApp: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   
-  // Learn page admin state
+  // Learn page admin state - Fixed state management
   const [learnPageMode, setLearnPageMode] = useState<'public' | 'admin' | 'view-post'>('public'); 
   const [storedBlogIds, setStoredBlogIds] = useState<string[]>([]);
   const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
+  const [isLoadingBlogIds, setIsLoadingBlogIds] = useState(false);
   
   // Separate search states to prevent conflicts
   const [searchQuery, setSearchQuery] = useState<string>(''); // For Navigation
@@ -105,86 +107,147 @@ const ChainCheckApp: React.FC = () => {
 
   const isDark = theme === 'dark';
 
-  // Load stored blog IDs from localStorage
+  // Load stored blog IDs from MongoDB (preferred) or localStorage (fallback) - FIXED
   useEffect(() => {
-    try {
-      const savedIds = localStorage.getItem('walrus-blog-ids');
-      if (savedIds) {
-        const parsedIds = JSON.parse(savedIds);
-        if (Array.isArray(parsedIds)) {
-          setStoredBlogIds(parsedIds);
+    const loadBlogIds = async () => {
+      setIsLoadingBlogIds(true);
+      try {
+        console.log('🔄 App: Loading blog IDs from MongoDB...');
+        
+        // Try MongoDB first
+        const mongoIds = await fetchBlogIds();
+        setStoredBlogIds(mongoIds);
+        
+        console.log(`✅ App: Loaded ${mongoIds.length} blog IDs from MongoDB`);
+        
+        // Sync with localStorage for backup
+        localStorage.setItem('walrus-blog-ids', JSON.stringify(mongoIds));
+        
+      } catch (mongoError) {
+        console.warn('⚠️ App: MongoDB unavailable, falling back to localStorage');
+        
+        // Fallback to localStorage
+        try {
+          const savedIds = localStorage.getItem('walrus-blog-ids');
+          if (savedIds) {
+            const parsedIds = JSON.parse(savedIds);
+            if (Array.isArray(parsedIds)) {
+              setStoredBlogIds(parsedIds);
+              console.log(`📦 App: Loaded ${parsedIds.length} blog IDs from localStorage`);
+            }
+          }
+        } catch (localError) {
+          console.error('❌ App: Error loading from localStorage:', localError);
         }
+      } finally {
+        setIsLoadingBlogIds(false);
       }
-    } catch (err) {
-      console.error('Error loading blog IDs from localStorage:', err);
-    }
+    };
+
+    loadBlogIds();
   }, []);
 
-  // Reset learn page mode when navigating away from learn page or when returning to it
+  // FIXED: Only reset learn page mode when navigating AWAY from learn page
   useEffect(() => {
     if (currentPage !== 'learn') {
-      // Reset to public when leaving learn page
-      setLearnPageMode('public');
-      setSelectedBlogPost(null);
-    } else if (currentPage === 'learn' && learnPageMode !== 'public') {
-      // Reset to public when navigating to learn page (ensures it always starts public)
+      console.log('📍 App: Navigating away from learn page, resetting state');
       setLearnPageMode('public');
       setSelectedBlogPost(null);
     }
-  }, [currentPage]);
+    // Removed the problematic else clause that was causing the infinite loop
+  }, [currentPage]); // Only depend on currentPage, not learnPageMode
 
   // Handle learn page admin login
   const handleLearnAdminLogin = () => {
-    console.log('Learn page admin login triggered');
+    console.log('🔐 App: Learn page admin login triggered');
     setLearnPageMode('admin');
   };
 
   // Handle return to public learn page
   const handleReturnToPublicLearn = () => {
-    console.log('Returning to public learn page');
+    console.log('🏠 App: Returning to public learn page');
     setLearnPageMode('public');
     setSelectedBlogPost(null);
   };
 
-  // Add proper handleViewPost function
+  // Handle view post
   const handleViewPost = (post: BlogPost) => {
-    console.log('App handleViewPost called with:', post.title);
+    console.log('👁️ App: handleViewPost called with:', post.title);
     setSelectedBlogPost(post);
     setLearnPageMode('view-post');
   };
 
-  // Add back to learn function
+  // Handle back to learn
   const handleBackToLearn = () => {
-    console.log('Going back to learn page from post view');
+    console.log('⬅️ App: Going back to learn page from post view');
     setSelectedBlogPost(null);
     setLearnPageMode('public');
   };
 
-  // Add donate handler
+  // Handle donate
   const handleDonate = (blobId: string) => {
-    alert(`Donation functionality for blob ${blobId} would be implemented here`);
+    alert(`💝 Donation functionality for blob ${blobId} would be implemented here`);
   };
 
-  // Handle blog creation/publishing
-  const handleBlogCreated = (blobId: string) => {
-    if (blobId && !storedBlogIds.includes(blobId)) {
+  // ENHANCED: Handle blog creation with MongoDB integration
+  const handleBlogCreated = async (blobId: string, blogData: {
+    title: string;
+    creator: string;
+  }) => {
+    try {
+      console.log('📝 App: Blog created callback received:', { blobId, blogData });
+      
+      if (!blobId) {
+        throw new Error('No blob ID provided');
+      }
+
+      if (storedBlogIds.includes(blobId)) {
+        console.log('ℹ️ App: Blog ID already exists, skipping save');
+        return;
+      }
+
+      // Save to MongoDB
+      console.log('💾 App: Saving blog metadata to MongoDB...');
+      await saveBlogMetadata({
+        id: blobId,
+        title: blogData.title,
+        creator: blogData.creator
+      });
+      console.log('✅ App: Blog metadata saved to MongoDB');
+
+      // Update local state
       const newIds = [...storedBlogIds, blobId];
       setStoredBlogIds(newIds);
+      
+      // Update localStorage as backup
       localStorage.setItem('walrus-blog-ids', JSON.stringify(newIds));
+      
+      console.log('🎉 App: Blog creation completed successfully');
+      
+    } catch (error) {
+      console.error('❌ App: Error in blog creation callback:', error);
+      
+      // Fallback to localStorage only
+      if (!storedBlogIds.includes(blobId)) {
+        const newIds = [...storedBlogIds, blobId];
+        setStoredBlogIds(newIds);
+        localStorage.setItem('walrus-blog-ids', JSON.stringify(newIds));
+        console.log('📦 App: Saved to localStorage as fallback');
+      }
+      
+      throw error; // Re-throw so Admin component can handle the error
     }
   };
 
   // Session expiry and warning handlers
   const handleSessionExpired = () => {
-    console.log('Session has expired across the app');
+    console.log('⏰ App: Session has expired across the app');
     // Optional: You could show a toast notification here
-    // For example: showToast('Session expired. Please unlock again to continue.', 'warning');
   };
 
   const handleSessionWarning = () => {
-    console.log('Session warning: 5 minutes remaining');
+    console.log('⚠️ App: Session warning: 5 minutes remaining');
     // Optional: You could show a toast notification here
-    // For example: showToast('Session expiring in 5 minutes', 'info');
   };
 
   // Helper function to safely calculate risk score with proper error handling
@@ -480,6 +543,15 @@ const ChainCheckApp: React.FC = () => {
     refetch();
   };
 
+  // Debug: Log current learn page state for troubleshooting
+  console.log('🐛 App Debug - Learn page state:', {
+    currentPage,
+    learnPageMode,
+    selectedBlogPost: selectedBlogPost?.title || null,
+    storedBlogIds: storedBlogIds.length,
+    isLoadingBlogIds
+  });
+
   return (
     <SessionProvider
       sessionDuration={30 * 60 * 1000} // 30 minutes
@@ -506,10 +578,10 @@ const ChainCheckApp: React.FC = () => {
           setSelectedTokenForAnalysis={setSelectedTokenForAnalysis}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
-          onLearnAdminLogin={currentPage === 'learn' ? handleLearnAdminLogin : undefined}
+          onLearnAdminLogin={currentPage === 'learn' && learnPageMode === 'public' ? handleLearnAdminLogin : undefined}
         />
 
-        {/* Page Content */}
+        {/* Page Content - FIXED conditional rendering */}
         {currentPage === 'home' && (
           <HomePage
             isDark={isDark}
@@ -543,34 +615,41 @@ const ChainCheckApp: React.FC = () => {
           />
         )}
         
-        {/* Learn page with proper blog post viewing */}
-        {currentPage === 'learn' && learnPageMode === 'public' && (
-          <LearnPage 
-            isDark={isDark}
-            storedBlogIds={storedBlogIds}
-            onCreateNew={handleLearnAdminLogin}
-            onViewPost={handleViewPost}
-          />
-        )}
+        {/* Learn page with FIXED conditional rendering - no more glitching! */}
+        {currentPage === 'learn' && (
+          <>
+            {/* Public learn page */}
+            {learnPageMode === 'public' && (
+              <LearnPage 
+                isDark={isDark}
+                storedBlogIds={storedBlogIds}
+                onCreateNew={handleLearnAdminLogin}
+                onViewPost={handleViewPost}
+              />
+            )}
 
-        {/* Blog post viewer */}
-        {currentPage === 'learn' && learnPageMode === 'view-post' && selectedBlogPost && (
-          <BlogPostViewer
-            post={{
-              ...selectedBlogPost,
-              excerpt: selectedBlogPost.excerpt ?? ""
-            }}
-            isDark={isDark}
-            onBack={handleBackToLearn}
-            onDonate={handleDonate}
-          />
-        )}
+            {/* Blog post viewer */}
+            {learnPageMode === 'view-post' && selectedBlogPost && (
+              <BlogPostViewer
+                post={{
+                  ...selectedBlogPost,
+                  excerpt: selectedBlogPost.excerpt ?? ""
+                }}
+                isDark={isDark}
+                onBack={handleBackToLearn}
+                onDonate={handleDonate}
+              />
+            )}
 
-        {currentPage === 'learn' && learnPageMode === 'admin' && (
-          <EnhancedAdmin
-            isDark={isDark}
-            onNavigateToDashboard={handleReturnToPublicLearn}
-          />
+            {/* Admin panel */}
+            {learnPageMode === 'admin' && (
+              <EnhancedAdmin
+                isDark={isDark}
+                onNavigateToDashboard={handleReturnToPublicLearn}
+                onBlogCreated={handleBlogCreated}
+              />
+            )}
+          </>
         )}
           
         {/* Simple fallback content for when pages don't exist yet */}

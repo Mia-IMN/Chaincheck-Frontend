@@ -204,19 +204,19 @@ export const getCategoryStyle = (category: string, isDark: boolean): string => {
 
 // Debugging utility
 export const debugToken = (token: any) => {
-  console.log('=== TOKEN DEBUG ===');
-  console.log('Token object:', token);
-  console.log('Has riskScore:', !!token.riskScore);
-  console.log('Risk score value:', token.riskScore);
-  console.log('Risk badge CSS:', token.riskScore ? getRiskBadge(token.riskScore) : 'no risk score');
-  console.log('Token category:', getTokenCategory(token.name || '', token.symbol || ''));
-  console.log('==================');
+  // console.log('=== TOKEN DEBUG ===');
+  // console.log('Token object:', token);
+  // console.log('Has riskScore:', !!token.riskScore);
+  // console.log('Risk score value:', token.riskScore);
+  // console.log('Risk badge CSS:', token.riskScore ? getRiskBadge(token.riskScore) : 'no risk score');
+  // console.log('Token category:', getTokenCategory(token.name || '', token.symbol || ''));
+  // console.log('==================');
 };
 
 // Validation utilities
 export const validateTokenData = (token: Partial<Token>): boolean => {
   if (!token.name || !token.symbol) {
-    console.error('Token missing required fields:', token);
+    // console.error('Token missing required fields:', token);
     return false;
   }
   return true;
