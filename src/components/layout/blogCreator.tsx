@@ -192,29 +192,29 @@ export const BlogCreator: React.FC<BlogCreatorProps> = ({ isDark, onPublish, onC
 
   return (
     <div className={`min-h-screen transition-colors duration-200 ${isDark ? 'bg-[#0B1120]' : 'bg-white'}`}>
-      <div className="max-w-4xl mx-auto px-6 py-24">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-24 lg:py-24">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 mb-6 sm:mb-8">
+          <div className="flex items-center gap-2 sm:gap-4">
             {onCancel && (
               <button
                 onClick={onCancel}
-                className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-600'}`}
+                className={`p-2 rounded-lg transition-colors flex-shrink-0 ${isDark ? 'hover:bg-white/10 text-white' : 'hover:bg-gray-100 text-gray-600'}`}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
             )}
-            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            <h1 className={`text-xl sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
               Create New Post
             </h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               onClick={() => setShowPreview(!showPreview)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base ${
                 isDark
                   ? 'border border-white/20 text-white hover:bg-white/5'
                   : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -225,15 +225,19 @@ export const BlogCreator: React.FC<BlogCreatorProps> = ({ isDark, onPublish, onC
             <button
               onClick={handlePublish}
               disabled={isUploading}
-              className="bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 sm:flex-none bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white px-3 sm:px-6 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base whitespace-nowrap"
             >
               {isUploading ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Publishing...
+                  <span className="hidden sm:inline">Publishing...</span>
+                  <span className="sm:hidden">...</span>
                 </div>
               ) : (
-                'Publish to Walrus & Database'
+                <>
+                  <span className="hidden sm:inline">Publish to Walrus & Database</span>
+                  <span className="sm:hidden">Publish</span>
+                </>
               )}
             </button>
           </div>
@@ -241,61 +245,63 @@ export const BlogCreator: React.FC<BlogCreatorProps> = ({ isDark, onPublish, onC
 
         {/* Error Display */}
         {error && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{error}</span>
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-sm sm:text-base">{error}</span>
+              </div>
+              <button 
+                onClick={() => setError(null)}
+                className="text-xs sm:text-sm underline hover:no-underline self-start sm:self-auto ml-7 sm:ml-0"
+              >
+                Dismiss
+              </button>
             </div>
-            <button 
-              onClick={() => setError(null)}
-              className="mt-2 text-sm underline hover:no-underline"
-            >
-              Dismiss
-            </button>
           </div>
         )}
 
         {showPreview ? (
           /* Preview Mode */
-          <div className={`space-y-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <div className={`space-y-4 sm:space-y-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
             {formData.image && (
               <img
                 src={formData.image}
                 alt="Featured"
-                className="w-full h-64 object-cover rounded-xl"
+                className="w-full h-48 sm:h-64 object-cover rounded-xl"
               />
             )}
-            <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-800'}`}>
+            <div className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-800'}`}>
               {formData.category}
             </div>
-            <h1 className="text-4xl font-bold leading-tight">{formData.title || 'Your Title Here'}</h1>
-            <div className="flex items-center gap-4 text-sm opacity-70">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">{formData.title || 'Your Title Here'}</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm opacity-70">
               <span>By {formData.author || 'Author Name'}</span>
-              <span>•</span>
+              <span className="hidden sm:inline">•</span>
               <span>{new Date().toLocaleDateString()}</span>
-              <span>•</span>
+              <span className="hidden sm:inline">•</span>
               <span>{Math.ceil((formData.content?.split(' ').length || 0) / 200)} min read</span>
             </div>
             {formData.excerpt && (
-              <div className="text-lg text-gray-600 italic border-l-4 border-blue-500 pl-4">
+              <div className="text-base sm:text-lg text-gray-600 italic border-l-4 border-blue-500 pl-3 sm:pl-4">
                 {formData.excerpt}
               </div>
             )}
             <div
-              className="prose prose-lg max-w-none"
+              className="prose prose-sm sm:prose-lg max-w-none"
               dangerouslySetInnerHTML={{
                 __html: formatContent(formData.content || 'Your content will appear here...')
               }}
             />
             {formData.acceptDonation && (
-              <div className={`mt-8 p-6 rounded-xl border ${
+              <div className={`mt-6 sm:mt-8 p-4 sm:p-6 rounded-xl border ${
                 isDark ? 'bg-yellow-500/10 border-yellow-500/20' : 'bg-yellow-50 border-yellow-200'
               }`}>
                 <div className="text-center">
-                  <div className="text-2xl mb-2">💝</div>
-                  <div className={`font-semibold ${isDark ? 'text-yellow-400' : 'text-yellow-800'}`}>
+                  <div className="text-xl sm:text-2xl mb-2">💝</div>
+                  <div className={`font-semibold text-sm sm:text-base ${isDark ? 'text-yellow-400' : 'text-yellow-800'}`}>
                     This post accepts donations
                   </div>
                 </div>
@@ -304,35 +310,35 @@ export const BlogCreator: React.FC<BlogCreatorProps> = ({ isDark, onPublish, onC
           </div>
         ) : (
           /* Edit Mode */
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Featured Image */}
-            <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+            <div className={`border-2 border-dashed rounded-xl p-4 sm:p-8 text-center transition-colors ${
               isDark ? 'border-white/20 hover:border-white/30' : 'border-gray-300 hover:border-gray-400'
             }`}>
               {formData.image ? (
-                <div className="relative">
+                <div className="relative inline-block">
                   <img
                     src={formData.image}
                     alt="Featured"
-                    className="max-h-48 mx-auto rounded-lg"
+                    className="max-h-32 sm:max-h-48 mx-auto rounded-lg"
                   />
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, image: '' }))}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                    className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
               ) : (
                 <>
-                  <p className={`${isDark ? 'text-white/70' : 'text-gray-400'}`}>
+                  <p className={`text-sm sm:text-base ${isDark ? 'text-white/70' : 'text-gray-400'}`}>
                     No featured image selected.
                   </p>
                   <button
                     onClick={insertImage}
-                    className="mt-2 bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200"
+                    className="mt-2 bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200 text-sm sm:text-base"
                   >
                     Upload Image
                   </button>
@@ -349,7 +355,7 @@ export const BlogCreator: React.FC<BlogCreatorProps> = ({ isDark, onPublish, onC
 
             {/* Title */}
             <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
+              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
                 Title *
               </label>
               <input
@@ -358,57 +364,60 @@ export const BlogCreator: React.FC<BlogCreatorProps> = ({ isDark, onPublish, onC
                 placeholder="Enter your blog post title..."
                 value={formData.title}
                 onChange={handleInputChange}
-                className={`w-full p-4 rounded-lg text-2xl font-semibold outline-none transition-colors border ${
+                className={`w-full p-3 sm:p-4 rounded-lg text-lg sm:text-2xl font-semibold outline-none transition-colors border ${
                   isDark ? 'bg-[#121B30] text-white placeholder-white/60 border-white/10 focus:border-blue-400' : 'bg-gray-100 text-gray-900 placeholder-gray-500 border-gray-200 focus:border-blue-500'
                 }`}
               />
             </div>
 
-            {/* Author */}
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
-                Author *
-              </label>
-              <input
-                type="text"
-                name="author"
-                placeholder="Your name or pen name..."
-                value={formData.author}
-                onChange={handleInputChange}
-                className={`w-full p-3 rounded-lg outline-none transition-colors border ${
-                  isDark ? 'bg-[#121B30] text-white placeholder-white/60 border-white/10 focus:border-blue-400' : 'bg-gray-100 text-gray-900 placeholder-gray-500 border-gray-200 focus:border-blue-500'
-                }`}
-              />
-            </div>
+            {/* Author and Category - Side by side on larger screens */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              {/* Author */}
+              <div>
+                <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
+                  Author *
+                </label>
+                <input
+                  type="text"
+                  name="author"
+                  placeholder="Your name or pen name..."
+                  value={formData.author}
+                  onChange={handleInputChange}
+                  className={`w-full p-3 rounded-lg outline-none transition-colors border text-sm sm:text-base ${
+                    isDark ? 'bg-[#121B30] text-white placeholder-white/60 border-white/10 focus:border-blue-400' : 'bg-gray-100 text-gray-900 placeholder-gray-500 border-gray-200 focus:border-blue-500'
+                  }`}
+                />
+              </div>
 
-            {/* Category */}
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
-                Category
-              </label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className={`w-full p-3 rounded-lg outline-none transition-colors border ${
-                  isDark ? 'bg-[#121B30] text-white border-white/10 focus:border-blue-400' : 'bg-gray-100 text-gray-900 border-gray-200 focus:border-blue-500'
-                }`}
-              >
-                {nicheOptions.map(option => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
+              {/* Category */}
+              <div>
+                <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
+                  Category
+                </label>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  className={`w-full p-3 rounded-lg outline-none transition-colors border text-sm sm:text-base ${
+                    isDark ? 'bg-[#121B30] text-white border-white/10 focus:border-blue-400' : 'bg-gray-100 text-gray-900 border-gray-200 focus:border-blue-500'
+                  }`}
+                >
+                  {nicheOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Excerpt */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className={`text-sm font-medium ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                <label className={`text-xs sm:text-sm font-medium ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
                   Excerpt (optional)
                 </label>
                 <button
                   onClick={generateExcerpt}
-                  className={`text-sm underline hover:no-underline transition-opacity ${
+                  className={`text-xs sm:text-sm underline hover:no-underline transition-opacity self-start sm:self-auto ${
                     isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'
                   }`}
                 >
@@ -421,7 +430,7 @@ export const BlogCreator: React.FC<BlogCreatorProps> = ({ isDark, onPublish, onC
                 placeholder="Brief description of your post (will be auto-generated if left empty)..."
                 value={formData.excerpt}
                 onChange={handleInputChange}
-                className={`w-full p-3 rounded-lg outline-none transition-colors resize-none border ${
+                className={`w-full p-3 rounded-lg outline-none transition-colors resize-none border text-sm sm:text-base ${
                   isDark ? 'bg-[#121B30] text-white placeholder-white/60 border-white/10 focus:border-blue-400' : 'bg-gray-100 text-gray-900 placeholder-gray-500 border-gray-200 focus:border-blue-500'
                 }`}
               />
@@ -429,17 +438,17 @@ export const BlogCreator: React.FC<BlogCreatorProps> = ({ isDark, onPublish, onC
 
             {/* Content */}
             <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
+              <label className={`block text-xs sm:text-sm font-medium mb-2 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
                 Content *
               </label>
               <textarea
                 name="content"
                 ref={contentRef}
-                rows={15}
+                rows={12}
                 placeholder="Write your blog content here... Use [VIDEO: URL] to embed videos."
                 value={formData.content}
                 onChange={handleInputChange}
-                className={`w-full p-4 rounded-lg outline-none transition-colors resize-y border ${
+                className={`w-full p-3 sm:p-4 rounded-lg outline-none transition-colors resize-y border text-sm sm:text-base ${
                   isDark ? 'bg-[#121B30] text-white placeholder-white/60 font-mono tracking-wide border-white/10 focus:border-blue-400' : 'bg-gray-100 text-gray-900 placeholder-gray-500 font-mono tracking-wide border-gray-200 focus:border-blue-500'
                 }`}
               />
@@ -449,17 +458,17 @@ export const BlogCreator: React.FC<BlogCreatorProps> = ({ isDark, onPublish, onC
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <div className="flex gap-3">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={insertImage}
-                  className="px-3 py-1 text-sm rounded-lg bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200"
+                  className="flex-1 sm:flex-none px-3 py-2 text-sm rounded-lg bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200 text-center"
                 >
                   📷 Insert Image
                 </button>
                 <button
                   onClick={insertVideo}
-                  className="px-3 py-1 text-sm rounded-lg bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200"
+                  className="flex-1 sm:flex-none px-3 py-2 text-sm rounded-lg bg-gradient-to-r from-[#2F5A8A] to-[#437AF3] text-white font-medium hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-200 text-center"
                 >
                   🎥 Insert Video
                 </button>
@@ -480,14 +489,14 @@ export const BlogCreator: React.FC<BlogCreatorProps> = ({ isDark, onPublish, onC
             </div>
 
             {/* Publishing Info */}
-            <div className={`p-4 rounded-lg border ${
+            <div className={`p-3 sm:p-4 rounded-lg border ${
               isDark ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-700'
             }`}>
               <div className="flex items-center gap-2 mb-1">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="font-medium text-sm">Publishing Info</span>
+                <span className="font-medium text-xs sm:text-sm">Publishing Info</span>
               </div>
               <div className="text-xs space-y-1">
                 <div>✅ Content will be stored on Walrus decentralized network</div>

@@ -606,7 +606,7 @@ export const PortfolioPage: React.FC<PortfolioPageProps> = ({ isDark }) => {
   if (!isUnlocked) {
     return (
       <div className="min-h-screen pt-16 sm:pt-20 lg:pt-32 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-4xl mx-auto my-8 text-center">
           <div className={`p-6 sm:p-8 lg:p-16 rounded-3xl backdrop-blur-sm border ${
             isDark 
               ? 'bg-white/5 border-white/10' 

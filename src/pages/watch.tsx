@@ -44,6 +44,29 @@ interface WalletAnalyzerProps {
   isDark?: boolean;
 }
 
+// Sui RPC endpoints
+const SUI_MAINNET_RPC = 'https://fullnode.mainnet.sui.io:443';
+
+// Known token types on Sui
+const KNOWN_TOKENS = {
+  SUI: '0x2::sui::SUI',
+  USDC: '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC',
+  USDT: '0xc060006111016b8a020ad5b33834984a437aaa7d3c74c18e09a95d48aceab08c::coin::COIN',
+  WETH: '0xaf8cd5edc19c4512f4259f0bee101a40d41ebed738ade5874359610ef8eeced5::coin::COIN',
+  CETUS: '0x06864a6f921804860930db6ddbe2e16acdf8504495ea7481637a1c8b9a8fe54b::cetus::CETUS',
+  HASUI: '0xbde4ba4c2e274a60ce15c1cfff9e5c42e41654ac8b6d906a57efa4bd3c29f47d::hasui::HASUI'
+};
+
+// Token metadata
+const TOKEN_INFO = {
+  [KNOWN_TOKENS.SUI]: { symbol: 'SUI', name: 'Sui', decimals: 9, icon: 'S' },
+  [KNOWN_TOKENS.USDC]: { symbol: 'USDC', name: 'USD Coin', decimals: 6, icon: 'U' },
+  [KNOWN_TOKENS.USDT]: { symbol: 'USDT', name: 'Tether USD', decimals: 6, icon: 'T' },
+  [KNOWN_TOKENS.WETH]: { symbol: 'WETH', name: 'Wrapped Ethereum', decimals: 8, icon: 'E' },
+  [KNOWN_TOKENS.CETUS]: { symbol: 'CETUS', name: 'Cetus Protocol', decimals: 9, icon: 'C' },
+  [KNOWN_TOKENS.HASUI]: { symbol: 'HASUI', name: 'haSUI', decimals: 9, icon: 'H' }
+};
+
 export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }) => {
   const { isUnlocked, unlock } = useSharedSession();
   const { connected, account } = useWallet();
@@ -84,100 +107,234 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
     return true;
   };
 
-  // Convert raw contract data to component format
-  const parseWalletDataFromContract = (contractData: any): WalletAnalysisData => {
-    const holdings: CoinHolding[] = [];
-    
-    // Process SUI balance
-    if (contractData.sui_balance > 0) {
-      holdings.push({
-        id: '1',
-        name: 'Sui',
-        symbol: 'SUI',
-        price: 3.16, // Current SUI price
-        priceChange: Math.random() * 10 - 5, // Random 24h change for demo
-        balance: contractData.sui_balance / 1000000000, // Convert MIST to SUI
-        usdValue: (contractData.sui_balance * 316) / 1000000000 / 100, // Contract returns cents
-        riskScore: 4.2,
-        icon: 'S',
-        isVerified: true,
-        coinType: '0x2::sui::SUI'
+  // Make RPC call to Sui
+  const suiRpcCall = async (method: string, params: any[]) => {
+    try {
+      const response = await fetch(SUI_MAINNET_RPC, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method,
+          params,
+        }),
       });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        console.error('RPC Error:', data.error);
+        throw new Error(data.error.message || 'RPC call failed');
+      }
+
+      return data.result;
+    } catch (error) {
+      console.error('Network error:', error);
+      throw error;
+    }
+  };
+
+  // Get all coins owned by an address
+  const getOwnedCoins = async (address: string) => {
+    try {
+      const coins = await suiRpcCall('suix_getAllCoins', [address]);
+      return coins.data || [];
+    } catch (error) {
+      console.error('Error fetching coins:', error);
+      return [];
+    }
+  };
+
+  // Get owned objects (for NFTs)
+  const getOwnedObjects = async (address: string) => {
+    try {
+      const objects = await suiRpcCall('suix_getOwnedObjects', [
+        address,
+        {
+          filter: null,
+          options: {
+            showType: true,
+            showOwner: true,
+            showDisplay: true,
+          }
+        }
+      ]);
+      return objects.data || [];
+    } catch (error) {
+      console.error('Error fetching objects:', error);
+      return [];
+    }
+  };
+
+  // Get transaction count
+  const getTransactionCount = async (address: string) => {
+    try {
+      // Get recent transactions to estimate total count
+      const txns = await suiRpcCall('suix_queryTransactionBlocks', [
+        {
+          filter: {
+            FromAddress: address
+          },
+          options: {
+            showEffects: false,
+            showInput: false,
+            showEvents: false,
+            showObjectChanges: false
+          }
+        },
+        null,
+        50,
+        false
+      ]);
+      
+      // This is an approximation since full history requires pagination
+      return txns.data ? txns.data.length : 0;
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      return 0;
+    }
+  };
+
+  // Fetch current prices from CoinGecko or similar
+  const fetchTokenPrices = async () => {
+    // In a real implementation, you'd fetch from CoinGecko API
+    // For now, returning static prices
+    return {
+      'sui': { usd: 3.16, usd_24h_change: 2.5 },
+      'usd-coin': { usd: 1.00, usd_24h_change: 0.01 },
+      'tether': { usd: 1.00, usd_24h_change: -0.01 },
+      'ethereum': { usd: 2456.78, usd_24h_change: -1.2 },
+      'cetus-protocol': { usd: 0.15, usd_24h_change: 5.3 }
+    };
+  };
+
+  // Process coin data into holdings
+  const processCoinData = async (coins: any[], prices: any) => {
+    const holdings: CoinHolding[] = [];
+    const coinMap = new Map<string, number>();
+
+    // Aggregate coins by type
+    for (const coin of coins) {
+      const coinType = coin.coinType;
+      const balance = parseInt(coin.balance) || 0;
+      
+      if (coinMap.has(coinType)) {
+        coinMap.set(coinType, coinMap.get(coinType)! + balance);
+      } else {
+        coinMap.set(coinType, balance);
+      }
     }
 
-    // Process token balances from actual contract data
-    contractData.token_balances.forEach((token: any, index: number) => {
-      const balance = Number(token.balance) / Math.pow(10, token.decimals);
-      const usdValue = Number(token.estimated_value_usd) / 100; // Convert cents to dollars
+    // Convert to holdings
+    let id = 1;
+    for (const [coinType, balance] of Array.from(coinMap.entries())) {
+      const tokenInfo = TOKEN_INFO[coinType];
       
-      holdings.push({
-        id: (index + 2).toString(),
-        name: getTokenName(token.symbol),
-        symbol: token.symbol,
-        price: balance > 0 ? usdValue / balance : 0, // Calculate price per token
-        priceChange: Math.random() * 10 - 5, // Random change for demo
-        balance,
-        usdValue,
-        riskScore: calculateTokenRiskScore(token.symbol),
-        icon: getTokenIcon(token.symbol),
-        isVerified: isVerifiedToken(token.symbol),
-        coinType: token.token_type
-      });
+      if (tokenInfo) {
+        const decimals = tokenInfo.decimals;
+        const actualBalance = balance / Math.pow(10, decimals);
+        
+        // Get price data
+        let price = 0;
+        let priceChange = 0;
+        
+        switch (tokenInfo.symbol) {
+          case 'SUI':
+            price = prices['sui']?.usd || 3.16;
+            priceChange = prices['sui']?.usd_24h_change || 0;
+            break;
+          case 'USDC':
+            price = prices['usd-coin']?.usd || 1.00;
+            priceChange = prices['usd-coin']?.usd_24h_change || 0;
+            break;
+          case 'USDT':
+            price = prices['tether']?.usd || 1.00;
+            priceChange = prices['tether']?.usd_24h_change || 0;
+            break;
+          case 'WETH':
+            price = prices['ethereum']?.usd || 2456.78;
+            priceChange = prices['ethereum']?.usd_24h_change || 0;
+            break;
+          case 'CETUS':
+            price = prices['cetus-protocol']?.usd || 0.15;
+            priceChange = prices['cetus-protocol']?.usd_24h_change || 0;
+            break;
+        }
+
+        const usdValue = actualBalance * price;
+
+        holdings.push({
+          id: id.toString(),
+          name: tokenInfo.name,
+          symbol: tokenInfo.symbol,
+          price,
+          priceChange,
+          balance: actualBalance,
+          usdValue,
+          riskScore: calculateTokenRiskScore(tokenInfo.symbol),
+          icon: tokenInfo.icon,
+          isVerified: true,
+          coinType
+        });
+
+        id++;
+      } else if (balance > 0) {
+        // Unknown token
+        const shortType = coinType.split('::').pop() || 'Unknown';
+        holdings.push({
+          id: id.toString(),
+          name: shortType,
+          symbol: shortType,
+          price: 0,
+          priceChange: 0,
+          balance: balance,
+          usdValue: 0,
+          riskScore: 9.0,
+          icon: shortType.charAt(0).toUpperCase(),
+          isVerified: false,
+          coinType
+        });
+        id++;
+      }
+    }
+
+    return holdings.sort((a, b) => b.usdValue - a.usdValue);
+  };
+
+  // Process NFTs
+  const processNFTs = (objects: any[]) => {
+    const nftMap = new Map<string, number>();
+    
+    // Filter out coins and system objects
+    const nfts = objects.filter(obj => {
+      const type = obj.data?.type || '';
+      return !type.includes('::coin::Coin') && 
+             !type.includes('0x2::') && 
+             !type.includes('0x3::') &&
+             obj.data?.display?.data;
     });
 
-    // Create NFT collections data from actual contract NFT count
-    const nftCollections: NFTCollection[] = [];
-    if (contractData.nft_count > 0) {
-      const collections = generateNFTCollections(contractData.nft_count);
-      nftCollections.push(...collections);
+    // Group by collection (simplified - in reality you'd parse the type)
+    for (const nft of nfts) {
+      const type = nft.data.type;
+      const collection = type.split('::')[1] || 'Unknown';
+      nftMap.set(collection, (nftMap.get(collection) || 0) + 1);
     }
 
-    const totalValue = holdings.reduce((sum, holding) => sum + holding.usdValue, 0);
-
-    return {
-      walletAddress: contractData.wallet_address,
-      totalValueUsd: totalValue,
-      coinHoldings: holdings,
-      nftCollections,
-      totalTransactions: 0, // This would need additional contract calls
-      riskScore: calculatePortfolioRiskScore(holdings),
-      lastActivity: contractData.last_transaction_time,
-      analysisTimestamp: Date.now(),
-      isActive: contractData.is_active,
-      activityScore: 0, // Will be calculated from activity analysis
-      diversityScore: 0, // Will be calculated from activity analysis
-      isWhale: false // Will be determined from activity analysis
-    };
-  };
-
-  // Get token name from symbol
-  const getTokenName = (symbol: string): string => {
-    const tokenNames: { [key: string]: string } = {
-      'SUI': 'Sui',
-      'USDC': 'USD Coin',
-      'USDT': 'Tether USD',
-      'WETH': 'Wrapped Ethereum',
-      'CETUS': 'Cetus Protocol'
-    };
-    return tokenNames[symbol] || symbol;
-  };
-
-  // Get token icon
-  const getTokenIcon = (symbol: string): string => {
-    switch (symbol.toUpperCase()) {
-      case 'SUI': return 'S';
-      case 'USDC': return 'U';
-      case 'USDT': return 'T';
-      case 'WETH': return 'E';
-      case 'CETUS': return 'C';
-      default: return symbol.charAt(0).toUpperCase();
+    const collections: NFTCollection[] = [];
+    for (const [name, count] of Array.from(nftMap.entries())) {
+      collections.push({
+        name,
+        count,
+        floorPrice: 0, // Would need to fetch from marketplace APIs
+        totalValue: 0
+      });
     }
-  };
 
-  // Check if token is verified
-  const isVerifiedToken = (symbol: string): boolean => {
-    const verifiedTokens = ['SUI', 'USDC', 'USDT', 'WETH', 'CETUS'];
-    return verifiedTokens.includes(symbol.toUpperCase());
+    return collections;
   };
 
   // Calculate token risk score
@@ -187,9 +344,10 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
       'USDC': 2.1,
       'USDT': 2.3,
       'WETH': 5.1,
-      'CETUS': 7.2
+      'CETUS': 7.2,
+      'HASUI': 3.5
     };
-    return riskScores[symbol] || 8.5; // Higher risk for unknown tokens
+    return riskScores[symbol] || 8.5;
   };
 
   // Calculate portfolio risk score
@@ -205,215 +363,53 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
     return Math.round(weightedRisk * 10) / 10;
   };
 
-  // Generate NFT collections based on count
-  const generateNFTCollections = (nftCount: number): NFTCollection[] => {
-    const collections: NFTCollection[] = [];
-    
-    if (nftCount >= 1) {
-      collections.push({
-        name: 'Sui Frens',
-        count: Math.min(nftCount, 3),
-        floorPrice: 0.5,
-        totalValue: Math.min(nftCount, 3) * 0.5
-      });
-    }
-    
-    if (nftCount >= 4) {
-      collections.push({
-        name: 'Sui Punks',
-        count: Math.min(nftCount - 3, 5),
-        floorPrice: 1.2,
-        totalValue: Math.min(nftCount - 3, 5) * 1.2
-      });
-    }
-    
-    if (nftCount >= 9) {
-      collections.push({
-        name: 'Sui Generative',
-        count: nftCount - 8,
-        floorPrice: 0.8,
-        totalValue: (nftCount - 8) * 0.8
-      });
-    }
-    
-    return collections;
-  };
-
-  // Simple direct wallet analysis - no blockchain transactions needed
-  const readWalletData = async (targetAddress: string) => {
-    console.log('📊 Analyzing wallet (simplified method):', targetAddress);
-    
-    // Add a small delay to simulate analysis
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Directly execute the contract logic with the real address
-    const result = executeContractLogic(targetAddress);
-    console.log('📊 Wallet data result:', result);
-    return result;
-  };
-
-  // Simple direct activity analysis - no blockchain transactions needed  
-  const analyzeWalletActivity = async (targetAddress: string): Promise<{
-    is_whale: boolean;
-    diversity_score: number;
-    activity_score: number;
-  }> => {
-    console.log('🔍 Analyzing wallet activity (simplified method):', targetAddress);
-    
-    // Add a small delay to simulate analysis
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Directly execute the activity logic with the real address
-    const result = executeActivityLogic(targetAddress);
-    console.log('🔍 Activity analysis result:', result);
-    return result;
-  };
-
-  // Execute the exact same logic as the smart contract
-  const executeContractLogic = (address: string) => {
-    console.log('Executing contract logic for wallet address:', address);
-    
-    // Implement the same logic as the smart contract
-    const addressBytes = hexToBytes(address.slice(2));
-    
-    // Calculate SUI balance using contract logic
-    const hashSum = addressBytes.reduce((sum, byte) => sum + byte, 0);
-    const baseBalance = hashSum % 50000000000; // 0-50 SUI in MIST
-    const suiBalance = baseBalance < 100000000 ? baseBalance + 100000000 : baseBalance;
-    
-    console.log(`Address ${address.slice(0, 8)}... -> SUI Balance: ${suiBalance / 1000000000} SUI`);
-    
-    // Generate token balances based on address (exact contract logic)
-    const tokenBalances = [];
-    
-    // USDC check (exact contract logic)
-    if (addressBytes[5] % 4 === 0) {
-      const balance = addressBytes[10] * 1000000; // 6 decimals
-      tokenBalances.push({
-        token_type: "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC",
-        symbol: "USDC",
-        balance: balance,
-        decimals: 6,
-        estimated_value_usd: Math.floor(balance / 10000) // $1 per USDC in cents
-      });
-      console.log(`Found USDC: ${balance / 1000000} USDC`);
-    }
-    
-    // USDT check (exact contract logic)
-    if (addressBytes[8] % 5 === 0) {
-      const balance = addressBytes[12] * 1000000; // 6 decimals
-      tokenBalances.push({
-        token_type: "0xc060006111016b8a020ad5b33834984a437aaa7d3c74c18e09a95d48aceab08c::coin::COIN",
-        symbol: "USDT",
-        balance: balance,
-        decimals: 6,
-        estimated_value_usd: Math.floor(balance / 10000) // $1 per USDT in cents
-      });
-      console.log(`Found USDT: ${balance / 1000000} USDT`);
-    }
-    
-    // WETH check (exact contract logic)
-    if (addressBytes[15] % 6 === 0) {
-      const balance = addressBytes[20] * 1000000000000000; // 18 decimals
-      tokenBalances.push({
-        token_type: "0xaf8cd5edc19c4512f4259f0bee101a40d41ebed738ade5874359610ef8eeced5::coin::COIN",
-        symbol: "WETH",
-        balance: balance,
-        decimals: 18,
-        estimated_value_usd: Math.floor((balance * 245678) / 1000000000000000000) // ~$2456.78 per ETH
-      });
-      console.log(`Found WETH: ${balance / 1000000000000000000} WETH`);
-    }
-    
-    // CETUS check (exact contract logic)
-    if (addressBytes[25] % 7 === 0) {
-      const balance = addressBytes[28] * 1000000000; // 9 decimals
-      tokenBalances.push({
-        token_type: "0x06864a6f921804860930db6ddbe2e16acdf8504495ea7481637a1c8b9a8fe54b::cetus::CETUS",
-        symbol: "CETUS",
-        balance: balance,
-        decimals: 9,
-        estimated_value_usd: Math.floor((balance * 15) / 1000000000) // ~$0.15 per CETUS
-      });
-      console.log(`Found CETUS: ${balance / 1000000000} CETUS`);
-    }
-    
-    // Calculate NFT count (exact contract logic)
-    const nftIndicator = addressBytes[31] % 20;
-    let nftCount = 0;
-    if (nftIndicator < 2) nftCount = 0;
-    else if (nftIndicator < 8) nftCount = 1;
-    else if (nftIndicator < 12) nftCount = 2;
-    else if (nftIndicator < 15) nftCount = 3;
-    else if (nftIndicator < 17) nftCount = 5;
-    else if (nftIndicator < 19) nftCount = 8;
-    else nftCount = 15;
-    
-    console.log(`NFT Count: ${nftCount}, Token Count: ${tokenBalances.length}`);
-    
-    return {
-      wallet_address: address,
-      sui_balance: suiBalance,
-      token_balances: tokenBalances,
-      nft_count: nftCount,
-      last_transaction_time: Date.now(),
-      is_active: suiBalance > 0 || tokenBalances.length > 0 || nftCount > 0
-    };
-  };
-
-  // Execute activity analysis logic (exact contract logic)
-  const executeActivityLogic = (address: string) => {
-    const walletData = executeContractLogic(address);
-    const suiBalance = walletData.sui_balance;
-    const tokenCount = walletData.token_balances.length;
-    const nftCount = walletData.nft_count;
-    
-    // Exact contract logic for activity analysis
-    const isWhale = suiBalance > 100000000000; // More than 100 SUI (contract logic)
-    const diversityScore = tokenCount * 10 + nftCount;
-    const activityScore = walletData.is_active ? 
-      diversityScore + Math.floor(suiBalance / 1000000000) : 0;
-    
-    return {
-      is_whale: isWhale,
-      diversity_score: diversityScore,
-      activity_score: activityScore
-    };
-  };
-
-  // Helper function to convert hex string to bytes
-  const hexToBytes = (hex: string): number[] => {
-    const bytes = [];
-    for (let i = 0; i < hex.length; i += 2) {
-      bytes.push(parseInt(hex.substr(i, 2), 16));
-    }
-    return bytes;
-  };
-
-  // Main function to analyze wallet using simplified approach
+  // Main function to analyze wallet using real blockchain data
   const analyzeWalletOnChain = async (targetAddress: string): Promise<WalletAnalysisData> => {
-    // No wallet connection required since we're not doing transactions
     try {
-      console.log('🔍 Starting simplified wallet analysis for:', targetAddress);
+      console.log('🔍 Fetching real blockchain data for:', targetAddress);
       
-      // Direct wallet data analysis (no blockchain transactions)
-      const walletDataResult = await readWalletData(targetAddress);
+      // Fetch all data in parallel
+      const [coins, objects, txCount, prices] = await Promise.all([
+        getOwnedCoins(targetAddress),
+        getOwnedObjects(targetAddress),
+        getTransactionCount(targetAddress),
+        fetchTokenPrices()
+      ]);
+
+      console.log('📊 Raw data:', { coins: coins.length, objects: objects.length, txCount });
+
+      // Process the data
+      const holdings = await processCoinData(coins, prices);
+      const nftCollections = processNFTs(objects);
+
+      // Calculate totals
+      const totalValue = holdings.reduce((sum, holding) => sum + holding.usdValue, 0);
+      const suiBalance = holdings.find(h => h.symbol === 'SUI')?.balance || 0;
       
-      // Direct activity analysis (no blockchain transactions)
-      const activityResult = await analyzeWalletActivity(targetAddress);
-      
-      // Parse and combine the results
-      const analysisData = parseWalletDataFromContract(walletDataResult);
-      
-      // Add activity data
-      analysisData.isWhale = activityResult.is_whale;
-      analysisData.diversityScore = activityResult.diversity_score;
-      analysisData.activityScore = activityResult.activity_score;
-      
-      console.log('✅ Simplified analysis complete for:', targetAddress);
+      // Determine whale status and scores
+      const isWhale = totalValue > 100000 || suiBalance > 10000;
+      const diversityScore = (holdings.length * 15) + (nftCollections.length * 10);
+      const activityScore = Math.min(999, diversityScore + Math.floor(totalValue / 1000) + (txCount * 2));
+
+      const analysisData: WalletAnalysisData = {
+        walletAddress: targetAddress,
+        totalValueUsd: totalValue,
+        coinHoldings: holdings,
+        nftCollections,
+        totalTransactions: txCount,
+        riskScore: calculatePortfolioRiskScore(holdings),
+        lastActivity: Date.now(), // Would need to fetch from last transaction
+        analysisTimestamp: Date.now(),
+        isActive: holdings.length > 0 || nftCollections.length > 0,
+        activityScore,
+        diversityScore,
+        isWhale
+      };
+
+      console.log('✅ Analysis complete:', analysisData);
       return analysisData;
     } catch (error) {
-      console.error('Error in simplified wallet analysis:', error);
+      console.error('Error analyzing wallet:', error);
       throw new Error('Failed to analyze wallet. Please ensure the address is valid and try again.');
     }
   };
@@ -436,7 +432,6 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
       const data = await analyzeWalletOnChain(walletAddress);
       setAnalysisData(data);
       
-      // Count verified and unknown tokens
       const verified = data.coinHoldings.filter(coin => coin.isVerified).length;
       const unknown = data.coinHoldings.filter(coin => !coin.isVerified).length;
       setHideOptions({ verified, unknown });
@@ -499,7 +494,7 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
   if (!isUnlocked) {
     return (
       <div className="min-h-screen pt-20 sm:pt-32 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-4xl mx-auto my-4 text-center">
           <div className={`p-8 sm:p-16 rounded-3xl backdrop-blur-sm border transition-all duration-500 ${
             isDark 
               ? 'bg-white/5 border-white/10' 
@@ -513,7 +508,7 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
             }`}>
               Wallet Intelligence
             </h1>
-            <p className={`text-base sm:text-xl mb-6 sm:mb-8 leading-relaxed max-w-3xl mx-auto ${
+            <p className={`text-base sm:text-sm mb-6 sm:mb-8 leading-relaxed max-w-3xl mx-auto ${
               isDark ? 'text-slate-300' : 'text-slate-600'
             }`}>
               Unlock the secrets of any blockchain wallet with institutional-grade analysis tools. 
@@ -522,7 +517,7 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
             <div className="flex justify-center mb-8 sm:mb-16">
               <LaunchButton 
                 onUnlock={unlock}
-                contractPackageId="0xf1845f05aba533e4656436af6c3622d214e7f6e0befbae14eef6d2b23462d0e6" 
+                 contractPackageId="0xf1845f05aba533e4656436af6c3622d214e7f6e0befbae14eef6d2b23462d0e6" 
                 configId="0xa8464ca3ce0ddb185b6f58c497386ef826a033c718cf9c5e8ecdde517490da38"
               />
             </div>
@@ -560,7 +555,7 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
     );
   }
 
-  // Show input interface (no wallet connection required for simplified approach)
+  // Show input interface
   if (!showResults) {
     return (
       <div className="min-h-screen pt-20 sm:pt-32 px-4 sm:px-6">
@@ -635,7 +630,7 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
             
             <div className="mt-6 sm:mt-8 text-sm text-center">
               <span className={`${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                Supports Sui mainnet addresses • Instant analysis
+                Supports Sui mainnet addresses • Real-time blockchain data
               </span>
             </div>
           </div>
@@ -725,7 +720,7 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
                 <p className={`text-xl sm:text-2xl lg:text-3xl font-bold ${
                   isDark ? 'text-white' : 'text-gray-900'
                 }`}>
-                  {portfolioValue > 0 ? `$${portfolioValue.toFixed(2)}` : 'No value'}
+                  {portfolioValue > 0 ? `${portfolioValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'No value'}
                 </p>
               </div>
               <div className="text-right">
@@ -796,7 +791,7 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
               <div className={`text-xl sm:text-2xl lg:text-3xl font-bold ${
                 isDark ? 'text-blue-400' : 'text-blue-600'
               }`}>
-                {portfolioValue > 0 ? `$${portfolioValue.toFixed(2)}` : 'No holdings found'}
+                {portfolioValue > 0 ? `${portfolioValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'No holdings found'}
               </div>
             </div>
             
@@ -888,6 +883,7 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
                             coin.symbol === 'USDT' ? 'bg-emerald-500' :
                             coin.symbol === 'WETH' ? 'bg-blue-600' :
                             coin.symbol === 'CETUS' ? 'bg-purple-500' :
+                            coin.symbol === 'HASUI' ? 'bg-indigo-500' :
                             'bg-gray-500'
                           }`}>
                             {coin.icon}
@@ -916,7 +912,7 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
                           <div className={`text-xs sm:text-sm lg:text-base font-medium ${
                             isDark ? 'text-white' : 'text-gray-900'
                           }`}>
-                            ${coin.price.toFixed(2)}
+                            ${coin.price.toFixed(coin.price >= 100 ? 2 : coin.price >= 1 ? 3 : 4)}
                           </div>
                           <div className={`text-xs flex items-center ${
                             coin.priceChange >= 0 ? 'text-green-500' : 'text-red-500'
@@ -933,12 +929,15 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
                       <td className={`px-3 sm:px-4 lg:px-8 py-3 sm:py-4 lg:py-6 whitespace-nowrap text-xs sm:text-sm lg:text-base font-medium ${
                         isDark ? 'text-slate-300' : 'text-gray-900'
                       }`}>
-                        {coin.balance.toFixed(coin.symbol === 'WETH' ? 6 : 4)} {coin.symbol}
+                        {coin.balance.toLocaleString('en-US', { 
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: coin.symbol === 'WETH' ? 6 : 4 
+                        })} {coin.symbol}
                       </td>
                       <td className={`px-3 sm:px-4 lg:px-8 py-3 sm:py-4 lg:py-6 whitespace-nowrap text-xs sm:text-sm lg:text-base font-bold ${
                         isDark ? 'text-white' : 'text-gray-900'
                       }`}>
-                        ${coin.usdValue.toFixed(2)}
+                        ${coin.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="px-3 sm:px-4 lg:px-8 py-3 sm:py-4 lg:py-6 whitespace-nowrap">
                         <div className="flex flex-col">
@@ -973,6 +972,53 @@ export const WalletAnalyzer: React.FC<WalletAnalyzerProps> = ({ isDark = false }
             </div>
           )}
         </div>
+
+        {/* NFT Collections Section (if any) */}
+        {analysisData.nftCollections.length > 0 && (
+          <div className={`mt-6 sm:mt-8 rounded-2xl sm:rounded-3xl backdrop-blur-sm border overflow-hidden ${
+            isDark 
+              ? 'bg-white/5 border-white/10' 
+              : 'bg-white border-gray-200 shadow-xl'
+          }`}>
+            <div className={`px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b ${
+              isDark ? 'border-white/10' : 'border-gray-200'
+            }`}>
+              <h2 className={`text-lg sm:text-xl lg:text-2xl font-bold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>
+                NFT Collections
+              </h2>
+            </div>
+            <div className="p-4 sm:p-6 lg:p-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {analysisData.nftCollections.map((collection, index) => (
+                  <div key={index} className={`p-4 rounded-xl border ${
+                    isDark 
+                      ? 'bg-white/5 border-white/10' 
+                      : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    <h3 className={`font-semibold mb-2 ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      {collection.name}
+                    </h3>
+                    <div className={`text-sm space-y-1 ${
+                      isDark ? 'text-slate-400' : 'text-gray-600'
+                    }`}>
+                      <div>Count: {collection.count}</div>
+                      {collection.floorPrice > 0 && (
+                        <>
+                          <div>Floor: {collection.floorPrice} SUI</div>
+                          <div>Value: ~${collection.totalValue.toFixed(2)}</div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -463,7 +463,7 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
       <div className={`min-h-screen transition-colors duration-200 ${
         isDark ? 'bg-[#0B1120]' : 'bg-gray-50'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24 sm:py-24">
           {/* Mobile-friendly Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
             <div className="flex items-center gap-3 sm:gap-4">
@@ -668,7 +668,7 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
     <div className={`min-h-screen transition-colors duration-200 ${
       isDark ? 'bg-[#0B1120]' : 'bg-gray-50'
     }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24 sm:py-24">
         {/* Mobile-friendly Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
           <div className="flex items-center gap-3 sm:gap-4">
@@ -685,7 +685,7 @@ export const EnhancedAdmin: React.FC<EnhancedAdminProps> = ({
               </button>
             )}
             <div>
-              <h1 className={`text-2xl sm:text-3xl font-bold ${
+              <h1 className={`text-2xl sm:text-2xl font-bold ${
                 isDark ? 'text-white' : 'text-gray-900'
               }`}>
                 Blog Management Dashboard
